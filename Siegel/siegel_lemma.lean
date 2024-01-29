@@ -41,6 +41,9 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 --variables (i : Fin m ) (j : Fin m)
 --#check (∏  j : Fin n , (A i j))
 -- maybe n = m + k  0 < k
+
+-- i=1,..,m e j=1,.. ,n
+
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
@@ -54,16 +57,15 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    let N := fun i : Fin m =>( ∑  j : Fin n , B*( if (A i j) < 0 then -(A i j) else 0))
    let S:= Finset.Icc (-N) (P)
    let C:= Nat.floor ((‖A‖*n*B+1)^m)
-   have hcardS : S.card=C := by
-      sorry
+   have hcardS : S.card = ∏ i : Fin m, (P i + N i + 1):= by  sorry
    have hcardineq : S.card<T.card := by sorry
+      -- zify
       -- rw [hcardT, hcardS]
       -- have haux : (C : ℝ)  < (B + 1) ^ n := by sorry
       -- norm_num  at haux
       -- norm_num
       -- norm_cast
       -- qify
-
    let f:= fun v : (Fin n → ℤ ) => A.mulVec v
    have him : ∀ v ∈  T, (f v) ∈  S := sorry
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩

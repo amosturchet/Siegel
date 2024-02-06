@@ -47,7 +47,9 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+   -- B' is the vector with all components = B'
    let B':= fun j : Fin n => (B: ℤ )
+   -- T is the box [0 B]^n
    let T:= Finset.Icc 0 B'
    have hcardT : T.card=(B+1)^n := by
       simp
@@ -57,7 +59,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    let N := fun i : Fin m =>( ∑  j : Fin n , B*( if (A i j) < 0 then -(A i j) else 0))
    let S:= Finset.Icc (-N) (P)
    let C:= Nat.floor ((‖A‖*n*B+1)^m)
-   have hcardS : S.card = ∏ i : Fin m, (P i + N i + 1):= by  sorry
+   have hcardS : S.card = ∏ i : Fin m, (P i + N i + 1):= by sorry
    have hcardineq : S.card<T.card := by sorry
       -- zify
       -- rw [hcardT, hcardS]
@@ -69,7 +71,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    let f:= fun v : (Fin n → ℤ ) => A.mulVec v
    have him : ∀ v ∈  T, (f v) ∈  S := sorry
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
-   use x+(-y)
+   use x+ -y
+   -- proof that x - y ≠ 0
    refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
    simp at hfeq
    rw [← sub_eq_zero] at hfeq

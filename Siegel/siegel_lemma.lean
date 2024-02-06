@@ -69,13 +69,12 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    let f:= fun v : (Fin n → ℤ ) => A.mulVec v
    have him : ∀ v ∈  T, (f v) ∈  S := sorry
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
-   use x-y
-   constructor
-   · exact sub_ne_zero.mpr hneq
-   constructor
-   ·  simp at hfeq
-      sorry
-
+   use x+(-y)
+   refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
+   simp at hfeq
+   rw [← sub_eq_zero] at hfeq
+   rw [A.mulVec_add, A.mulVec_neg]
+   exact hfeq
    sorry
 
 

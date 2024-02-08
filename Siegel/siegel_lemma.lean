@@ -47,6 +47,11 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+   have hBpos : 0 < B := by
+      rw [Nat.floor_pos]
+      apply one_le_pow_of_one_le
+      apply Left.one_le_mul_of_le_of_le
+      sorry
    -- B' is the vector with all components = B'
    let B':= fun j : Fin n => (B: ℤ )
    -- T is the box [0 B]^n
@@ -55,11 +60,43 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       simp
       rw [Pi.card_Icc 0 B']
       simp
-   let P := fun i : Fin m =>( ∑  j : Fin n , B*( if 0 < (A i j) then A i j else 0))
-   let N := fun i : Fin m =>( ∑  j : Fin n , B*( if (A i j) < 0 then -(A i j) else 0))
-   let S:= Finset.Icc (-N) (P)
+   -- let P := fun i : Fin m =>( ∑  j : Fin n , B*( if 0 < (A i j) then A i j else 0))
+   -- let N := fun i : Fin m => B * ( ∑  j : Fin n , ( if (A i j) < 0 then (A i j) else 0)) --cambiato il segno di N
+   let P := fun i : Fin m => B * ( ∑  j : Fin n , Int.toNat (A i j ) : ℤ   )
+   let N := fun i : Fin m => B * ( ∑  j : Fin n , - Int.toNat ( - A i j ) : ℤ  ) --cambiato le definizioni di P ed N
+   let S:= Finset.Icc (N) (P)
+   have hineq : ∀ j : Fin m, N j ≤ P j + 1 := by
+      intro j
+      calc N j ≤ 0 := by
+            apply mul_nonpos_iff_pos_imp_nonpos.2
+            constructor
+            ·  intro hB
+               apply Finset.sum_nonpos
+               intro i hi
+               by_cases h1 : (A j i) < 0
+               simp
+               simp
+            intro h
+            linarith
+         _ ≤ P j := by
+            apply mul_nonneg_iff_pos_imp_nonneg.2
+            constructor
+            ·  intro hB
+               apply Finset.sum_nonneg
+               intro i hi
+               by_cases h1 : (A j i) < 0
+               simp
+               simp
+            intro h
+            linarith
+         _ ≤ P j + 1 := by linarith
    let C:= Nat.floor ((‖A‖*n*B+1)^m)
-   have hcardS : S.card = ∏ i : Fin m, (P i + N i + 1):= by sorry
+   have hcardS : S.card = (∏ i : Fin m,  (P i - N i + 1)):= by
+      rw [Pi.card_Icc (N) (P), Nat.cast_prod]
+      congr
+      ext j
+      rw [Int.card_Icc_of_le _ _ (by linarith [hineq j])]
+      ring
    have hcardineq : S.card<T.card := by sorry
       -- zify
       -- rw [hcardT, hcardS]
@@ -78,6 +115,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    rw [← sub_eq_zero] at hfeq
    rw [A.mulVec_add, A.mulVec_neg]
    exact hfeq
+
    sorry
 
 

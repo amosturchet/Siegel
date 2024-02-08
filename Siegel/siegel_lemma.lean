@@ -10,15 +10,11 @@ variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
 
 --#check ‖A‖
 
-
-
-
 --lemma box : Nat.card (Metric.ball (0 : Fin n → ℤ) x) = (2*x - 1)^n := by
-
 
 variable (Lp Lm : Fin n → ℤ)
 
-#check (Finset.Icc Lm Lp)
+--#check (Finset.Icc Lm Lp)
 
 -- cardinality of integer points in a product of intervals
 -- uses Icc
@@ -47,11 +43,19 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+   have hnormApos : 1≤ ‖A‖ := by
+     /-  by_contra h
+      apply lt_of_not_le at h
+
+      have h : ∀ (i : Fin m), ∀  (j : Fin n ) , 1 ≤ ‖ A i j ‖ := by sorry   -/
+         --Matrix.norm_entry_le_entrywise_sup_norm
+      sorry
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
       apply one_le_pow_of_one_le
-      apply Left.one_le_mul_of_le_of_le
-      sorry
+      apply one_le_mul_of_one_le_of_one_le _ hnormApos
+      rw [Nat.one_le_cast]
+      linarith
    -- B' is the vector with all components = B'
    let B':= fun j : Fin n => (B: ℤ )
    -- T is the box [0 B]^n

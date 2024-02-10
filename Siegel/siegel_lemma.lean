@@ -4,11 +4,14 @@ import Mathlib
 open Matrix
 open BigOperators
 
-attribute [local instance] Matrix.linftyOpNormedAddCommGroup
+--attribute [local instance] Matrix.linftyOpNormedAddCommGroup
 
-variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
+attribute [local instance] Matrix.seminormedAddCommGroup
+
+variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )  --(B : Matrix (Fin 1) (Fin 1) ℤ)
 
 --#check ‖A‖
+--#check ‖(B 0 0)‖
 
 --lemma box : Nat.card (Metric.ball (0 : Fin n → ℤ) x) = (2*x - 1)^n := by
 
@@ -39,17 +42,37 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 -- maybe n = m + k  0 < k
 
 -- i=1,..,m e j=1,.. ,n
+--Matrix.norm_entry_le_entrywise_sup_norm
 
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+   have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ A i₀ j₀  ∨ A i₀ j₀ ≤ -1 := by
+      by_contra h
+      push_neg at h
+      apply hA
+      convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀ = 0
+      exact Iff.symm ext_iff
+      intro i₀ j₀
+      linarith [h i₀ j₀]
    have hnormApos : 1≤ ‖A‖ := by
-     /-  by_contra h
-      apply lt_of_not_le at h
-
-      have h : ∀ (i : Fin m), ∀  (j : Fin n ) , 1 ≤ ‖ A i j ‖ := by sorry   -/
-         --Matrix.norm_entry_le_entrywise_sup_norm
-      sorry
+      have h : ∃  (i₀ : Fin m) (j₀ : Fin n ) , 1 ≤ ‖(A i₀ j₀)‖ := by
+         rcases hexnnzentry with ⟨i₀ , j₀ , h ⟩
+         use  i₀
+         use  j₀
+         rw [Int.norm_eq_abs,Int.cast_abs,le_abs]
+         cases h with
+         | inl h₁ =>
+            left
+            exact Int.cast_one_le_of_pos h₁
+         | inr h₂ =>
+            right
+            rw [le_neg]
+            apply Int.cast_le_neg_one_of_neg
+            exact Int.le_sub_one_iff.mp h₂
+      rcases h with ⟨ i₀, j₀, h1⟩
+      calc 1 ≤ ‖(A i₀ j₀)‖ := by exact h1
+         _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
       apply one_le_pow_of_one_le
@@ -101,7 +124,11 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       ext j
       rw [Int.card_Icc_of_le _ _ (by linarith [hineq j])]
       ring
-   have hcardineq : S.card<T.card := by sorry
+   have hcardineq : S.card<T.card := by
+      zify
+      rw [hcardT, hcardS]
+      push_cast
+      sorry
       -- zify
       -- rw [hcardT, hcardS]
       -- have haux : (C : ℝ)  < (B + 1) ^ n := by sorry

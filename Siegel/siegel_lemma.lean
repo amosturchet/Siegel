@@ -44,9 +44,7 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 -- i=1,..,m e j=1,.. ,n
 --Matrix.norm_entry_le_entrywise_sup_norm
 
-theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
-      ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
-   let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+lemma non_zero_mat_norm_ge_one (hA : A ≠ 0 ):1≤ ‖A‖ := by
    have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ A i₀ j₀  ∨ A i₀ j₀ ≤ -1 := by
       by_contra h
       push_neg at h
@@ -55,28 +53,33 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       exact Iff.symm ext_iff
       intro i₀ j₀
       linarith [h i₀ j₀]
-   have hnormApos : 1≤ ‖A‖ := by
-      have h : ∃  (i₀ : Fin m) (j₀ : Fin n ) , 1 ≤ ‖(A i₀ j₀)‖ := by
-         rcases hexnnzentry with ⟨i₀ , j₀ , h ⟩
-         use  i₀
-         use  j₀
-         rw [Int.norm_eq_abs,Int.cast_abs,le_abs]
-         cases h with
-         | inl h₁ =>
-            left
-            exact Int.cast_one_le_of_pos h₁
-         | inr h₂ =>
-            right
-            rw [le_neg]
-            apply Int.cast_le_neg_one_of_neg
-            exact Int.le_sub_one_iff.mp h₂
-      rcases h with ⟨ i₀, j₀, h1⟩
-      calc 1 ≤ ‖(A i₀ j₀)‖ := by exact h1
-         _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
+   have h : ∃  (i₀ : Fin m) (j₀ : Fin n ) , 1 ≤ ‖(A i₀ j₀)‖ := by
+      rcases hexnnzentry with ⟨i₀ , j₀ , h ⟩
+      use  i₀
+      use  j₀
+      rw [Int.norm_eq_abs,Int.cast_abs,le_abs]
+      cases h with
+      | inl h₁ =>
+         left
+         exact Int.cast_one_le_of_pos h₁
+      | inr h₂ =>
+         right
+         rw [le_neg]
+         apply Int.cast_le_neg_one_of_neg
+         exact Int.le_sub_one_iff.mp h₂
+   rcases h with ⟨ i₀, j₀, h1⟩
+   calc 1 ≤ ‖(A i₀ j₀)‖ := by exact h1
+      _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
+
+
+
+theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
+      ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
+   let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
       apply one_le_pow_of_one_le
-      apply one_le_mul_of_one_le_of_one_le _ hnormApos
+      apply one_le_mul_of_one_le_of_one_le _ (non_zero_mat_norm_ge_one _ _ _ hA)
       rw [Nat.one_le_cast]
       linarith
    -- B' is the vector with all components = B'
@@ -128,6 +131,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       zify
       rw [hcardT, hcardS]
       push_cast
+      simp
       sorry
       -- zify
       -- rw [hcardT, hcardS]
@@ -137,7 +141,13 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       -- norm_cast
       -- qify
    let f:= fun v : (Fin n → ℤ ) => A.mulVec v
-   have him : ∀ v ∈  T, (f v) ∈  S := sorry
+   have him : ∀ v ∈  T, (f v) ∈  S := by
+      intro v hv
+      rw [Finset.mem_Icc] at hv
+      rw [Finset.mem_Icc]
+      constructor
+      intro i
+      sorry
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x+ -y
    -- proof that x - y ≠ 0

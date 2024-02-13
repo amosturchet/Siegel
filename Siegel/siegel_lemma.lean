@@ -146,7 +146,21 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       rw [Finset.mem_Icc] at hv
       rw [Finset.mem_Icc]
       constructor
+      -- prove N i ≤ (A v) i
       intro i
+      have hN : ∑ j : Fin n, -↑(Int.toNat (-A i j)) ≤ ∑ j : Fin n, A i j := by
+         apply Finset.sum_le_sum
+         intro j hj
+         norm_cast
+         rw [neg_le]
+         exact Int.self_le_toNat (-A i j)
+      sorry
+      -- prove (A v) i ≤ P i
+      intro i
+      have hP :  ∑ j : Fin n, A i j ≤ ∑ j : Fin n, ↑(Int.toNat (A i j)) := by
+         apply Finset.sum_le_sum
+         intro j hj
+         exact Int.self_le_toNat (A i j)
       sorry
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x+ -y

@@ -5,7 +5,11 @@ open Matrix
 open BigOperators
 
 --attribute [local instance] Matrix.linftyOpNormedAddCommGroup
+--questa norma che ci aveva suggerito Riccardo non va bene perchè è
+-- $|A|_\infty = \operatorname{sup}i (\sum_j |A{ij}|)$
 
+
+--questa qui sotto è quella giusta
 attribute [local instance] Matrix.seminormedAddCommGroup
 
 variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )  --(B : Matrix (Fin 1) (Fin 1) ℤ)
@@ -72,9 +76,12 @@ lemma non_zero_mat_norm_ge_one (hA : A ≠ 0 ):1≤ ‖A‖ := by
       _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
 
 
+lemma boxbox (x y B': Fin n → ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
+   sorry
+
 
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
-      ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖^(n-m) ≤ (n*‖A‖)^m    := by
+      ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ (n*‖A‖)^(m/(n-m))   := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
@@ -95,7 +102,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
    let P := fun i : Fin m => B * ( ∑  j : Fin n , Int.toNat (A i j ) : ℤ   )
    let N := fun i : Fin m => B * ( ∑  j : Fin n , - Int.toNat ( - A i j ) : ℤ  ) --cambiato le definizioni di P ed N
    let S:= Finset.Icc (N) (P)
-   have hineq : ∀ j : Fin m, N j ≤ P j + 1 := by
+   have hineq : ∀ j : Fin m, N j ≤ P j + 1 := by  --provare a semplificare questa
       intro j
       calc N j ≤ 0 := by
             apply mul_nonpos_iff_pos_imp_nonpos.2
@@ -120,19 +127,20 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
             intro h
             linarith
          _ ≤ P j + 1 := by linarith
-   let C:= Nat.floor ((‖A‖*n*B+1)^m)
    have hcardS : S.card = (∏ i : Fin m,  (P i - N i + 1)):= by
       rw [Pi.card_Icc (N) (P), Nat.cast_prod]
       congr
       ext j
       rw [Int.card_Icc_of_le _ _ (by linarith [hineq j])]
       ring
+   let C:= Nat.floor ((‖A‖*n*B+1))
+   have hcomp : ∀ i : Fin m, (P i - N i + 1) ≤ C := by sorry
    have hcardineq : S.card<T.card := by
       zify
       rw [hcardT, hcardS]
-      push_cast
-      simp
-      sorry
+      calc (∏ i : Fin m, (P i - N i + 1)) ≤ (C)^m := by sorry
+         _ < ↑((B + 1) ^ n) := by sorry
+
       -- zify
       -- rw [hcardT, hcardS]
       -- have haux : (C : ℝ)  < (B + 1) ^ n := by sorry
@@ -140,37 +148,75 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
       -- norm_num
       -- norm_cast
       -- qify
-   let f:= fun v : (Fin n → ℤ ) => A.mulVec v
-   have him : ∀ v ∈  T, (f v) ∈  S := by
+   have him : ∀ v ∈  T, (A.mulVec v) ∈  S := by  --provare a semplificare
       intro v hv
       rw [Finset.mem_Icc] at hv
       rw [Finset.mem_Icc]
       constructor
       -- prove N i ≤ (A v) i
       intro i
-      have hN : ∑ j : Fin n, -↑(Int.toNat (-A i j)) ≤ ∑ j : Fin n, A i j := by
+     /-  have hN : ∑ j : Fin n, -↑(Int.toNat (-A i j)) ≤ ∑ j : Fin n, A i j := by
          apply Finset.sum_le_sum
          intro j hj
          norm_cast
          rw [neg_le]
-         exact Int.self_le_toNat (-A i j)
-      sorry
+         exact Int.self_le_toNat (-A i j) -/
+      unfold Matrix.mulVec
+      unfold dotProduct
+      simp
+      rw [Finset.mul_sum,neg_eq_neg_one_mul,Finset.mul_sum]
+      apply Finset.sum_le_sum
+      intro j hj
+      rw [neg_one_mul, neg_le]
+      by_cases hsign : A i j ≤ 0
+      ·  rw [ Int.toNat_of_nonneg, mul_comm]
+         simp
+         apply mul_le_mul_of_nonpos_right
+         exact hv.2 j
+         exact hsign
+         linarith
+      ·  simp at hsign
+         rw [Int.toNat_eq_zero.2]
+         simp
+         rw [mul_nonneg_iff_of_pos_left]
+         exact hv.1 j
+         exact hsign
+         linarith
       -- prove (A v) i ≤ P i
       intro i
-      have hP :  ∑ j : Fin n, A i j ≤ ∑ j : Fin n, ↑(Int.toNat (A i j)) := by
+      /- have hP :  ∑ j : Fin n, A i j ≤ ∑ j : Fin n, ↑(Int.toNat (A i j)) := by
          apply Finset.sum_le_sum
          intro j hj
-         exact Int.self_le_toNat (A i j)
-      sorry
+         exact Int.self_le_toNat (A i j) -/
+      unfold Matrix.mulVec
+      unfold dotProduct
+      simp
+      rw [Finset.mul_sum]
+      apply Finset.sum_le_sum
+      intro j hj
+      by_cases hsign : A i j ≤ 0
+      ·  rw [Int.toNat_eq_zero.2]
+         simp
+         apply mul_nonpos_of_nonpos_of_nonneg
+         exact hsign
+         exact hv.1 j
+         exact hsign
+      ·  simp at hsign
+         rw [ Int.toNat_of_nonneg, mul_comm]
+         rw [mul_le_mul_iff_of_pos_right]
+         exact hv.2 j
+         exact hsign
+         linarith
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
-   use x+ -y
+   use x-y
    -- proof that x - y ≠ 0
    refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
-   simp at hfeq
+   --simp at hfeq
    rw [← sub_eq_zero] at hfeq
-   rw [A.mulVec_add, A.mulVec_neg]
+   rw [sub_eq_add_neg,A.mulVec_add, A.mulVec_neg]
    exact hfeq
-
+   --norm_le_iff
+   rw [<-Matrix.norm_col,norm_le_iff]
    sorry
 
 

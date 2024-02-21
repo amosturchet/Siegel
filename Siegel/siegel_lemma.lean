@@ -76,22 +76,25 @@ lemma non_zero_mat_norm_ge_one (hA : A ≠ 0 ):1≤ ‖A‖ := by
       _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
 
 
-lemma boxbox (x y B': Fin n → ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
+lemma facile (x y B':  ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
    sorry
+
+/- lemma boxbox (x y B': Fin n → ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
+   sorry -/
 
 --esperimento cambio goal
 
-/- noncomputable def D : ℕ :=  Nat.floor ((n*‖A‖)^(m/(n-m)))
+/- noncomputable def D  :=  Nat.floor ((n*‖A‖)^(m/(n-m)))
 
-#check Nat.floor ((n*‖A‖)^(m/(n-m)))
+#check D
 
-def D' : Fin n → ℤ  := (D : ℤ )
- -/
+--def D' : Fin n → ℤ  := fun j : Fin n =>  (D : ℤ )
 
-/- theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) :
-      ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ t ∈ Finset.Icc ( - ↑Nat.floor ((n*‖A‖)^(m/(n-m)))) Nat.floor ((n*‖A‖)^(m/(n-m)))  := by
--/
-theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ (n*‖A‖)^(m/(n-m)) := by
+
+theorem siegelsLemma2  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ t ∈ Finset.Icc  (-(↑( Nat.floor((n*‖A‖)^(m/(n-m))) ) )) Nat.floor((n*‖A‖)^(m/(n-m)))   := by
+   sorry -/
+
+theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ Int.floor ((n*‖A‖)^(m/(n-m))) := by
    let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
@@ -234,9 +237,12 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    exact hfeq
    ---dusiguaglianza
    --rw [norm_le_iff]
-  /-  rw [<-Matrix.norm_col,norm_le_iff]
+   rw [<-Matrix.norm_col,norm_le_iff]
    intro i j
-   simp -/
+   simp
+   rw [Int.norm_eq_abs,Int.cast_le]
+
+
 
    sorry
 

@@ -240,9 +240,20 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    rw [<-Matrix.norm_col,norm_le_iff]
    intro i j
    simp
-   rw [Int.norm_eq_abs,Int.cast_le]
+   rw [Int.norm_eq_abs,Int.cast_le, abs_le]
+   constructor
+   ·  sorry
+   ·  sorry
+   simp
+   rw [Int.le_floor]
 
 
+
+   apply le_of_lt at hBpos
+   rw [Nat.le_floor_iff] at hBpos
+   exact hBpos
+   exact hBpos
+   --apply (Nat.le_floor_iff (le_of_lt hBpos)).1
 
    sorry
 

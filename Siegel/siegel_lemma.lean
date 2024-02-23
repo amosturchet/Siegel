@@ -48,7 +48,7 @@ lemma aux1 (h : Lm ≤ Lp) : (Finset.Icc Lm Lp).card =
 -- i=1,..,m e j=1,.. ,n
 --Matrix.norm_entry_le_entrywise_sup_norm
 
-lemma non_zero_mat_norm_ge_one (hA : A ≠ 0 ):1≤ ‖A‖ := by
+lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by
    have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ A i₀ j₀  ∨ A i₀ j₀ ≤ -1 := by
       by_contra h
       push_neg at h
@@ -76,9 +76,9 @@ lemma non_zero_mat_norm_ge_one (hA : A ≠ 0 ):1≤ ‖A‖ := by
       _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
 
 
-lemma facile (x y B':  ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
+/- lemma facile (x y B':  ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
    sorry
-
+ -/
 /- lemma boxbox (x y B': Fin n → ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
    sorry -/
 
@@ -94,14 +94,21 @@ lemma facile (x y B':  ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y �
 theorem siegelsLemma2  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ t ∈ Finset.Icc  (-(↑( Nat.floor((n*‖A‖)^(m/(n-m))) ) )) Nat.floor((n*‖A‖)^(m/(n-m)))   := by
    sorry -/
 
-theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ Int.floor ((n*‖A‖)^(m/(n-m))) := by
-   let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
-   have hBpos : 0 < B := by
-      rw [Nat.floor_pos]
+theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^(m/(n-m))) := by
+   have hnPos : 0 < n := by linarith
+   have hPos : 1 ≤  (n*‖A‖)^(m/(n-m)):= by
       apply one_le_pow_of_one_le
       apply one_le_mul_of_one_le_of_one_le _ (non_zero_mat_norm_ge_one _ _ _ hA)
       rw [Nat.one_le_cast]
       linarith
+    --  linarith [non_zero_mat_norm_ge_one _ _ _ hA]
+     /-  calc 0 < (↑n ) ^ (m / (n - m)) := by sorry
+          --[non_zero_mat_norm_ge_one hA]
+         _  ≤ (↑n * ‖A‖) ^ (m / (n - m)) := by linarith [non_zero_mat_norm_ge_one _ _ _ hA] -/
+   let B:= Nat.floor ((n*‖A‖)^(m/(n-m)))
+   have hBpos : 0 < B := by
+      rw [Nat.floor_pos]
+      exact hPos
    -- B' is the vector with all components = B'
    let B':= fun j : Fin n => (B: ℤ )
    -- T is the box [0 B]^n
@@ -148,6 +155,38 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       ring
    let C:= Nat.floor ((‖A‖*n*B+1))
    have hcomp : ∀ i : Fin m, (P i - N i + 1) ≤ C := by sorry
+   have hcomp2 : 1 ≤ ‖A‖ * ↑n := by
+      calc 1 ≤ ‖A‖ := by
+            exact non_zero_mat_norm_ge_one _ _ _ hA
+         _ ≤ ‖A‖ * ↑n := by
+            apply le_mul_of_one_le_right
+            exact le_trans (zero_le_one) (non_zero_mat_norm_ge_one _ _ _ hA)
+            norm_cast
+   have hCpos : 0 < C := by
+      rw [Nat.floor_pos]
+      calc 1 ≤ ‖A‖ * ↑n  := by exact hcomp2
+         _ ≤ ‖A‖ * ↑n * ↑B := by
+            apply le_mul_of_one_le_right
+            exact le_trans (zero_le_one) (hcomp2)
+            norm_cast
+         _ ≤ ‖A‖ * ↑n * ↑B + 1 := by linarith
+
+
+   have hcomputR (B₀ : ℕ ) : ( ↑((Nat.floor (‖A‖*n*B₀ + ‖A‖*n))^m ) : ℝ ) < (↑((B₀ + 1) ^ n)  ) := by
+      have h1 : ‖A‖*n*B₀  + ‖A‖*n = ‖A‖*n* (B₀  + 1) := by
+         linarith
+      rw [h1]
+      push_cast
+      have h2 : ‖A‖ * ↑n * (↑B₀ + 1) ^ m < (↑B₀ + 1) ^ n := by sorry
+
+
+      sorry
+     /-  calc ↑(⌊‖A‖ * ↑n * ↑B + ‖A‖ * ↑n⌋₊ ^ m) ≤ ↑(⌊‖A‖ * ↑n * (↑B + 1)⌋₊) ^ m := by
+
+            sorry
+         _ < ↑((B + 1) ^ n) := by sorry -/
+
+
    have hcardineq : S.card<T.card := by
       zify
       rw [hcardT, hcardS]
@@ -159,8 +198,21 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             linarith [hineq i]
             intro i hi
             exact hcomp i
-         _ < ↑((B + 1) ^ n) := by sorry
+         _  ≤ ↑(Nat.floor (‖A‖*n*B + ‖A‖*n))^m := by
+            apply pow_le_pow_left
+            norm_cast
+            exact (le_of_lt hCpos)
+            norm_cast
+            apply Nat.floor_le_floor
+            simp
+            exact hcomp2
+        /-  _ = (B+1)^m * (Nat.floor (‖A‖*n))^m := by
 
+            sorry -/
+         _  < ↑((B + 1) ^ n) := by
+            norm_cast
+            exact Nat.cast_lt.1 (hcomputR B)
+            --linarith [non_zero_mat_norm_ge_one _ _ _ hA, hnPos]
       -- zify
       -- rw [hcardT, hcardS]
       -- have haux : (C : ℝ)  < (B + 1) ^ n := by sorry
@@ -237,30 +289,40 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    exact hfeq
    ---dusiguaglianza
    --rw [norm_le_iff]
-   rw [<-Matrix.norm_col,norm_le_iff]
+   rw [<-Matrix.norm_col,norm_le_iff (le_trans zero_le_one hPos)]
    intro i j
+   rw [Finset.mem_Icc] at hyT
+   rw [Finset.mem_Icc] at hxT
    simp
-   rw [Int.norm_eq_abs,Int.cast_le, abs_le]
+   rw [Int.norm_eq_abs]
+   push_cast
+   rw [abs_le]
    constructor
-   ·  sorry
-   ·  sorry
-   simp
-   rw [Int.le_floor]
+   calc -(↑n * ‖A‖) ^ (m / (n - m)) ≤ - B' i := by
+         simp
+         exact (Nat.floor_le (le_trans zero_le_one hPos))
+      _  ≤ - ↑(y i) := by
+         simp
+         norm_cast
+         exact hyT.2 i
+      _  ≤ ↑(x i) - ↑(y i) := by
+         simp
+         exact hxT.1 i
+   calc ↑(x i) - ↑(y i) ≤ ↑(x i) := by
+         simp
+         exact hyT.1 i
+      _  ≤  (↑n * ‖A‖) ^ (m / (n - m)) := by
+         apply le_trans' (Nat.floor_le (le_trans zero_le_one hPos))
+         norm_cast
+         exact hxT.2 i
 
 
 
-   apply le_of_lt at hBpos
-   rw [Nat.le_floor_iff] at hBpos
-   exact hBpos
-   exact hBpos
-   --apply (Nat.le_floor_iff (le_of_lt hBpos)).1
 
-   sorry
+--prova
 
-
-
-
-   --have him : ∀ v : Fin n → ℤ , ‖ A.mulVec v‖≤ (‖A‖ * n * B +1) := sorry
-
-
-   --rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to
+   -- have hcardineqR : (S.card : ℝ ) < ( T.card : ℝ ) := by
+   --    rw [hcardT]
+   --    sorry
+   -- have hcardineq' : S.card<T.card := by
+--    exact Nat.cast_lt.1 hcardineqR

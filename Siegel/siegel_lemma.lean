@@ -80,7 +80,8 @@ lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by
       _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
 
 lemma norm_mat_int : ∃ (a : ℕ ), ‖A‖=↑a := by
-
+   --rw [Int.norm_eq_abs]
+   --Int.norm_eq_abs
    --norm_entry_le_entrywise_sup_norm
    --Matrix.norm_le_iff
    sorry

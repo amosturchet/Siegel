@@ -6,7 +6,7 @@ set_option maxHeartbeats 1000000
 open Matrix
 open BigOperators
 open Real
-open Nat
+open Nat Set
 
 --attribute [local instance] Matrix.linftyOpNormedAddCommGroup
 --questa norma che ci aveva suggerito Riccardo non va bene perchè è
@@ -79,12 +79,68 @@ lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by
    calc 1 ≤ ‖(A i₀ j₀)‖ := by exact h1
       _ ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
 
-lemma norm_mat_int : ∃ (a : ℕ ), ‖A‖=↑a := by
-   --rw [Int.norm_eq_abs]
-   --Int.norm_eq_abs
-   --norm_entry_le_entrywise_sup_norm
-   --Matrix.norm_le_iff
-   sorry
+
+
+lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a := by
+   --rw [<-sub_zero A,<-SeminormedAddGroup.dist_eq A 0]
+   --rw [Matrix.norm_def,Pi.norm_def]
+   --let x  := Finset.sup fun i =>( Finset.sup  (fun j => Int.natAbs (A i j)))
+   --let i₀ : Fin m
+   --let y:=Finset.sup Finset.univ fun b => ‖fun j => A b j‖₊
+   have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ Int.natAbs (A i₀ j₀) := by
+      by_contra h
+      push_neg at h
+      apply hA
+      convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀ = 0
+      exact Iff.symm ext_iff
+      intro i₀ j₀
+      specialize h i₀ j₀
+      rw [<-Int.natAbs_eq_zero]
+      exact lt_one_iff.mp h
+   let maxr :=fun i =>( Finset.sup Finset.univ (fun j => Int.natAbs (A i j)))
+   let x:= (Finset.sup Finset.univ fun i =>(maxr i ))
+   have hone : 1 ≤ x := by
+      rcases hexnnzentry with ⟨i₀,j₀,h₀ ⟩
+      let f₁:= fun (k : Fin n) => Int.natAbs (A i₀ k)
+      calc 1 ≤ Int.natAbs (A i₀ j₀) := by exact h₀
+         _ = f₁ j₀ := by exact rfl
+         _ ≤ maxr i₀ := by
+            apply Finset.le_sup
+            exact Finset.mem_univ j₀
+         _ ≤ x := by
+            apply Finset.le_sup
+            exact Finset.mem_univ i₀
+   use x
+   constructor
+   apply LE.le.antisymm
+   rw [Matrix.norm_le_iff]
+   intro i j
+   rw [Int.norm_eq_abs]
+   norm_cast
+   rw [Int.abs_eq_natAbs]
+   refine Int.ofNat_le.mpr ?h.a.a
+   let f:= fun (k : Fin n) => Int.natAbs (A i k)
+   calc Int.natAbs (A i j) = f j := by exact rfl
+      _≤ maxr i := by
+         apply Finset.le_sup
+         exact Finset.mem_univ j
+      _≤ x := by
+         apply Finset.le_sup
+         exact Finset.mem_univ i
+
+   exact cast_nonneg x
+   have extract_sup : ∃  (i₀ : Fin m) (j₀ : Fin n), x = Int.natAbs (A i₀ j₀) := by
+      simp only
+      sorry
+   rcases extract_sup with ⟨i₀, j₀, h₀  ⟩
+   rw [h₀]
+   calc ↑(Int.natAbs (A i₀ j₀)) ≤ ‖A i₀ j₀‖ := by
+         rw [Int.norm_eq_abs]
+         rw [Nat.cast_natAbs]
+      _  ≤ ‖A‖ := by exact norm_entry_le_entrywise_sup_norm A
+   exact hone
+
+
 
 /- lemma facile (x y B':  ℤ ) (hB'pos : 0 < B' ) : x ∈ Finset.Icc 0 B' → y ∈ Finset.Icc 0 B' → x-y  ∈  Finset.Icc (-B') B':= by
    sorry

@@ -17,7 +17,7 @@ attribute [local instance] Matrix.seminormedAddCommGroup
 
 variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
 
-lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by
+lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by     --Da eliminare
    have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ A i₀ j₀  ∨ A i₀ j₀ ≤ -1 := by
       by_contra h
       push_neg at h
@@ -47,64 +47,107 @@ lemma non_zero_mat_norm_ge_one ( hA : A ≠ 0 ) : 1 ≤ ‖A‖ := by
 
 
 lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a := by
-   have hexnnzentry : ∃  (i₀ : Fin m) (j₀ : Fin n), 1 ≤ Int.natAbs (A i₀ j₀) := by
-      by_contra h
-      push_neg at h
-      apply hA
-      convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀ = 0
-      exact Iff.symm ext_iff
-      intro i₀ j₀
-      specialize h i₀ j₀
-      rw [<-Int.natAbs_eq_zero]
-      exact lt_one_iff.mp h
-   let maxr :=fun i =>( Finset.sup Finset.univ (fun j => Int.natAbs (A i j)))
-   let x:= (Finset.sup Finset.univ fun i =>(maxr i ))
-   have hone : 1 ≤ x := by
-      rcases hexnnzentry with ⟨i₀,j₀,h₀ ⟩
-      let f₁:= fun (k : Fin n) => Int.natAbs (A i₀ k)
-      calc 1 ≤ Int.natAbs (A i₀ j₀) := by exact h₀
-         _ = f₁ j₀ := by exact rfl
-         _ ≤ maxr i₀ := by
-            apply Finset.le_sup
-            exact Finset.mem_univ j₀
-         _ ≤ x := by
-            apply Finset.le_sup
-            exact Finset.mem_univ i₀
+
+   let maxr :=fun i =>( Finset.sup Finset.univ (fun j => Int.natAbs (A i j)))  -- maxr i = max_j |A i j|   max of abs val of entries of i-th row
+   let x:= (Finset.sup Finset.univ fun i =>(maxr i ))       -- x = max_i maxr_ i
    use x
-   constructor
-   apply LE.le.antisymm
-   rw [Matrix.norm_le_iff]
+   constructor   --split goals: 1: ‖A‖ = ↑x, 2: 1 ≤ x
+   apply LE.le.antisymm   -- equality becomes two inequalities
+   --proof of ‖A‖ ≤ ↑x
+   rw [Matrix.norm_le_iff (cast_nonneg x)]
    intro i j
-   rw [Int.norm_eq_abs]
+   rw [Int.norm_eq_abs,Int.abs_eq_natAbs]
    norm_cast
-   rw [Int.abs_eq_natAbs]
-   refine Int.ofNat_le.mpr ?h.a.a
    let f:= fun (k : Fin n) => Int.natAbs (A i k)
    calc Int.natAbs (A i j) = f j := by exact rfl
-      _≤ maxr i := by
-         apply Finset.le_sup
-         exact Finset.mem_univ j
-      _≤ x := by
-         apply Finset.le_sup
-         exact Finset.mem_univ i
-   exact cast_nonneg x
-   have hineq : x ≤ Nat.floor (‖A‖) := by
-      apply Finset.sup_le
-      intro i hi
-      apply Finset.sup_le
-      intro j hj
-      apply Nat.le_floor
-      rw [Nat.cast_natAbs, <-Int.norm_eq_abs]
-      exact norm_entry_le_entrywise_sup_norm A
-   calc ↑x  ≤ ((Nat.floor (‖A‖)) : ℝ ) := by exact cast_le.mpr hineq
+      _≤ maxr i := by exact Finset.le_sup (Finset.mem_univ j)
+      _≤ x := by exact Finset.le_sup (Finset.mem_univ i)
+   -- proof of ↑x ≤ ‖A‖
+   calc ↑x  ≤ ((Nat.floor (‖A‖)) : ℝ ) := by
+         norm_cast
+         apply Finset.sup_le
+         intro i hi
+         apply Finset.sup_le
+         intro j hj
+         apply Nat.le_floor
+         rw [Nat.cast_natAbs, <-Int.norm_eq_abs]
+         exact norm_entry_le_entrywise_sup_norm A
       _ ≤ ‖A‖ := by apply Nat.floor_le (norm_nonneg A)
-   exact hone
+   -- proof of 1 ≤ x
+   by_contra h
+   apply hA
+   convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀=0
+   exact Iff.symm ext_iff
+   intro i₀ j₀
+   push_neg at h
+   rw [<-Int.natAbs_eq_zero,<-Nat.le_zero]
+   let f₁:= fun (k : Fin n) => Int.natAbs (A i₀ k)
+   calc Int.natAbs (A i₀ j₀) = f₁ j₀ := by exact rfl
+      _ ≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀)
+      _  ≤x := by exact Finset.le_sup (Finset.mem_univ i₀)
+      _  ≤ 0 := by exact lt_succ.mp h
+
+
 
 
 
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^((m : ℝ )/(n-m))) := by
    --have hnPos : 0 < n := by linarith
    rcases norm_mat_int _ _ A hA with ⟨ a, ha⟩
+   --Some definitions and relative properties
+   let e : ℝ := ↑m / (↑n - ↑m) --exponent
+   have hePos : 0 < e := by exact div_pos (cast_pos.mpr hm)  (sub_pos_of_lt (cast_lt.mpr hn))
+   let B:= Nat.floor ((n*‖A‖)^e)
+   -- B' is the vector with all components = B
+   let B':= fun j : Fin n => (B: ℤ )
+   -- T is the box [0 B]^n
+   let T:= Finset.Icc 0 B'
+   let P := fun i : Fin m => B * ( ∑  j : Fin n , Int.toNat (A i j ) : ℤ   )
+   let N := fun i : Fin m => B * ( ∑  j : Fin n , - Int.toNat ( - A i j ) : ℤ  )
+   -- S is the box where the image of T goes
+   let S:= Finset.Icc (N) (P)
+
+   --In order to apply Pigeohole we need:  S.card < T.card and  ∀ v ∈  T, (A.mulVec v) ∈  S
+
+   have him : ∀ v ∈  T, (A.mulVec v) ∈  S := by  --provare a semplificare
+      intro v hv
+      rw [Finset.mem_Icc] at hv
+      rw [Finset.mem_Icc]
+      unfold Matrix.mulVec
+      unfold dotProduct
+      simp only [Finset.sum_neg_distrib, mul_neg]
+      constructor
+      -- proof that N i ≤ (A v) i
+      intro i
+      simp only
+      rw [<-neg_mul,Finset.mul_sum]
+      apply Finset.sum_le_sum
+      intro j hj
+      by_cases hsign : A i j ≤ 0
+      ·  rw [ Int.toNat_of_nonneg (Int.neg_nonneg_of_nonpos hsign), mul_comm]
+         simp only [mul_neg, neg_mul, neg_neg]
+         exact mul_le_mul_of_nonpos_left (hv.2 j) hsign
+      ·  simp only [not_le] at hsign
+         rw [Int.toNat_eq_zero.2 (by linarith)]
+         simp only [CharP.cast_eq_zero, mul_zero, Left.neg_nonpos_iff]
+         rw [mul_nonneg_iff_of_pos_left  hsign]
+         exact hv.1 j
+      -- proof that (A v) i ≤ P i
+      intro i
+      simp only
+      rw [Finset.mul_sum]
+      apply Finset.sum_le_sum
+      intro j hj
+      by_cases hsign : A i j ≤ 0
+      ·  rw [Int.toNat_eq_zero.2 hsign]
+         simp only [CharP.cast_eq_zero, mul_zero]
+         exact mul_nonpos_of_nonpos_of_nonneg hsign (hv.1 j)
+      ·  simp only [not_le] at hsign
+         rw [Int.toNat_of_nonneg (le_of_lt hsign), mul_comm,mul_le_mul_iff_of_pos_right hsign]
+         exact hv.2 j
+
+
+ ---da qua
    have hone_le_n_A : 1 ≤ ↑n * ‖A‖ := by
       calc 1 ≤ ‖A‖ := by
             exact non_zero_mat_norm_ge_one _ _ _ hA
@@ -113,30 +156,21 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             exact le_trans (zero_le_one) (non_zero_mat_norm_ge_one _ _ _ hA)
             norm_cast
             exact one_le_of_lt hn
-   let e : ℝ := ↑m / (↑n - ↑m)
-   have hePos : 0 < e := by
-      apply div_pos
-      norm_cast
-      apply sub_pos_of_lt
-      norm_cast
-   have hineq1 : 1 ≤  (n*‖A‖)^e:= by
+
+
+   have hineq1 : 1 ≤  (n*‖A‖)^e:= by   ---needed at the end also
       apply one_le_rpow hone_le_n_A (le_of_lt hePos)
-   let B:= Nat.floor ((n*‖A‖)^e)
+
    have hBpos : 0 < B := by
       rw [Nat.floor_pos]
       exact hineq1
-   -- B' is the vector with all components = B'
-   let B':= fun j : Fin n => (B: ℤ )
-   -- T is the box [0 B]^n
-   let T:= Finset.Icc 0 B'
+
    have hcardT : T.card=(B+1)^n := by
       rw [Pi.card_Icc 0 B']
       simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
         Finset.card_fin]
 
-   let P := fun i : Fin m => B * ( ∑  j : Fin n , Int.toNat (A i j ) : ℤ   )
-   let N := fun i : Fin m => B * ( ∑  j : Fin n , - Int.toNat ( - A i j ) : ℤ  )
-   let S:= Finset.Icc (N) (P) -- S is the box where the image of T goes
+
    have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by  --provare a semplificare questa
       intro j
       calc N j ≤ 0 := by
@@ -298,69 +332,18 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
 
    --fine conti
 
-   have him : ∀ v ∈  T, (A.mulVec v) ∈  S := by  --provare a semplificare
-      intro v hv
-      rw [Finset.mem_Icc] at hv
-      rw [Finset.mem_Icc]
-      constructor
-      -- prove N i ≤ (A v) i
-      intro i
-      unfold Matrix.mulVec
-      unfold dotProduct
-      simp only [Finset.sum_neg_distrib, mul_neg]
-      rw [Finset.mul_sum,neg_eq_neg_one_mul,Finset.mul_sum]
-      apply Finset.sum_le_sum
-      intro j hj
-      rw [neg_one_mul, neg_le]
-      by_cases hsign : A i j ≤ 0
-      ·  rw [ Int.toNat_of_nonneg, mul_comm]
-         simp only [mul_neg, neg_le_neg_iff]
-         apply mul_le_mul_of_nonpos_right
-         exact hv.2 j
-         exact hsign
-         linarith
-      ·  simp only [not_le] at hsign
-         rw [Int.toNat_eq_zero.2]
-         simp only [CharP.cast_eq_zero, mul_zero, Left.neg_nonpos_iff]
-         rw [mul_nonneg_iff_of_pos_left]
-         exact hv.1 j
-         exact hsign
-         linarith
-      -- prove (A v) i ≤ P i
-      intro i
-      /- have hP :  ∑ j : Fin n, A i j ≤ ∑ j : Fin n, ↑(Int.toNat (A i j)) := by
-         apply Finset.sum_le_sum
-         intro j hj
-         exact Int.self_le_toNat (A i j) -/
-      unfold Matrix.mulVec
-      unfold dotProduct
-      simp only
-      rw [Finset.mul_sum]
-      apply Finset.sum_le_sum
-      intro j hj
-      by_cases hsign : A i j ≤ 0
-      ·  rw [Int.toNat_eq_zero.2]
-         simp only [CharP.cast_eq_zero, mul_zero]
-         apply mul_nonpos_of_nonpos_of_nonneg
-         exact hsign
-         exact hv.1 j
-         exact hsign
-      ·  simp only [not_le] at hsign
-         rw [ Int.toNat_of_nonneg, mul_comm]
-         rw [mul_le_mul_iff_of_pos_right]
-         exact hv.2 j
-         exact hsign
-         linarith
 
-   --Pronti per Pigeonhole
+
+   --Pigeonhole
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x-y
    -- proof that x - y ≠ 0
    refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
+   -- x-y is a solution
    rw [← sub_eq_zero] at hfeq
    rw [sub_eq_add_neg,A.mulVec_add, A.mulVec_neg]
    exact hfeq
-   ---disuguaglianza
+   ---Inequality
    rw [<-Matrix.norm_col,norm_le_iff (le_trans zero_le_one hineq1)]
    intro i j
    rw [Finset.mem_Icc] at hyT
@@ -384,9 +367,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
          norm_cast
          simp only [tsub_le_iff_right]
          rw [<-add_zero ((x i))]
-         apply Int.add_le_add
-         exact hxT.2 i
-         exact hyT.1 i
+         exact Int.add_le_add (hxT.2 i) (hyT.1 i)
       _  ≤  (↑n * ‖A‖) ^ e := by
          apply le_trans' (Nat.floor_le (le_trans zero_le_one hineq1))
          simp only [Int.cast_ofNat, le_refl]

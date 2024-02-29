@@ -117,38 +117,29 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       unfold dotProduct
       simp only [Finset.sum_neg_distrib, mul_neg]
       constructor
-      -- proof that N i ≤ (A v) i
-      intro i
-      simp only
+      all_goals intro i
+      all_goals simp only
       rw [<-neg_mul,Finset.mul_sum]
-      apply Finset.sum_le_sum
-      intro j hj
-      by_cases hsign : A i j ≤ 0
-      ·  rw [ Int.toNat_of_nonneg (Int.neg_nonneg_of_nonpos hsign), mul_comm]
-         simp only [mul_neg, neg_mul, neg_neg]
-         exact mul_le_mul_of_nonpos_left (hv.2 j) hsign
-      ·  simp only [not_le] at hsign
-         rw [Int.toNat_eq_zero.2 (by linarith)]
-         simp only [CharP.cast_eq_zero, mul_zero, Left.neg_nonpos_iff]
-         rw [mul_nonneg_iff_of_pos_left  hsign]
-         exact hv.1 j
-      -- proof that (A v) i ≤ P i
-      intro i
-      simp only
-      rw [Finset.mul_sum]
-      apply Finset.sum_le_sum
-      intro j hj
-      by_cases hsign : A i j ≤ 0
-      ·  rw [Int.toNat_eq_zero.2 hsign]
-         simp only [CharP.cast_eq_zero, mul_zero]
-         exact mul_nonpos_of_nonpos_of_nonneg hsign (hv.1 j)
-      ·  simp only [not_le] at hsign
-         rw [Int.toNat_of_nonneg (le_of_lt hsign), mul_comm,mul_le_mul_iff_of_pos_right hsign]
-         exact hv.2 j
+      any_goals rw [Finset.mul_sum]
+      all_goals apply Finset.sum_le_sum
+      all_goals intro j hj
+      all_goals by_cases hsign : 0 ≤ A i j
+      any_goals simp only [not_le] at hsign
+      rw [Int.toNat_eq_zero.2 (Int.neg_nonpos_of_nonneg hsign)]
+      any_goals try rw [Int.toNat_of_nonneg (by linarith)]
+      any_goals try rw [Int.toNat_of_nonneg hsign]
+      any_goals try rw [Int.toNat_eq_zero.2 (le_of_lt hsign)]
+      any_goals simp only [CharP.cast_eq_zero, mul_zero,mul_neg, neg_mul, neg_neg]
+      exact mul_nonneg hsign (hv.1 j)
+      any_goals exact mul_nonpos_of_nonpos_of_nonneg (le_of_lt hsign) (hv.1 j)
+      all_goals rw [<-mul_comm (v j)]
+      exact mul_le_mul_of_nonpos_right (hv.2 j) (le_of_lt hsign)
+      exact mul_le_mul_of_nonneg_right (hv.2 j) hsign
 
 
+   have hone_le_n_a : 1 ≤ n* a := by exact one_le_mul (one_le_of_lt hn) ha.2
  ---da qua
-   have hone_le_n_A : 1 ≤ ↑n * ‖A‖ := by
+   have hone_le_n_A : 1 ≤ ↑n * ‖A‖ := by   --get rid?
       calc 1 ≤ ‖A‖ := by
             exact non_zero_mat_norm_ge_one _ _ _ hA
          _ ≤ ↑n * ‖A‖ := by
@@ -157,6 +148,10 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             norm_cast
             exact one_le_of_lt hn
 
+   have hineq1' : 1 ≤  (n*‖A‖)^e:= by --alternative to hineq1
+      rw [ha.1]
+      apply one_le_rpow _ (le_of_lt hePos)
+      exact_mod_cast hone_le_n_a
 
    have hineq1 : 1 ≤  (n*‖A‖)^e:= by   ---needed at the end also
       apply one_le_rpow hone_le_n_A (le_of_lt hePos)
@@ -170,32 +165,23 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
         Finset.card_fin]
 
-
-   have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by  --provare a semplificare questa
+   have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by
       intro j
       calc N j ≤ 0 := by
-            apply mul_nonpos_iff_pos_imp_nonpos.2
-            constructor
-            ·  intro hB
-               apply Finset.sum_nonpos
-               intro i hi
-               by_cases h1 : (A j i) < 0
-               simp only [Left.neg_nonpos_iff, cast_nonneg]
-               simp only [Left.neg_nonpos_iff, cast_nonneg]
-            intro h
-            exact_mod_cast (le_of_lt hBpos)
+            apply (mul_nonpos_of_nonneg_of_nonpos (Int.ofNat_nonneg B))
+            apply Finset.sum_nonpos
+            intro i hi
+            by_cases h : 0 ≤ A j i
+            all_goals simp only [Left.neg_nonpos_iff, cast_nonneg]
          _ ≤ P j := by
-            apply mul_nonneg_iff_pos_imp_nonneg.2
-            constructor
-            ·  intro hB
-               apply Finset.sum_nonneg
-               intro i hi
-               by_cases h1 : (A j i) < 0
-               simp only [cast_nonneg]
-               simp only [cast_nonneg]
-            intro h
-            exact_mod_cast (le_of_lt hBpos)
+            apply mul_nonneg (Int.ofNat_nonneg B)
+            apply Finset.sum_nonneg
+            intro i hi
+            by_cases h1 : 0 ≤ (A j i)
+            all_goals simp only [cast_nonneg]
          _ ≤ P j + 1 := by exact Int.le_add_one (le_refl P j)
+
+
    have hcardS : S.card = (∏ i : Fin m,  (P i - N i + 1)):= by
       rw [Pi.card_Icc (N) (P), Nat.cast_prod]
       congr

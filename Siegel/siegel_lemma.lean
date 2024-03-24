@@ -29,6 +29,7 @@ lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a
    intro i₀ j₀
    rw [Int.norm_eq_abs,Int.abs_eq_natAbs]
    norm_cast
+   -- have: Int.natAbs (A i₀ j₀) ≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀) why doesn't this work?
    let f:= fun (k : Fin n) => Int.natAbs (A i₀ k)
    calc Int.natAbs (A i₀ j₀) = f j₀ := by exact rfl
       _≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀)
@@ -83,7 +84,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       rw [Finset.mem_Icc] at hv
       rw [Finset.mem_Icc]
       unfold Matrix.mulVec
-      unfold dotProduct
+      -- unfold dotProduct
       simp only [Finset.sum_neg_distrib, mul_neg]
       constructor
       all_goals intro i

@@ -15,16 +15,10 @@ open Nat Set
 --questa qui sotto è quella giusta
 attribute [local instance] Matrix.seminormedAddCommGroup
 
-variable (m n : ℕ) (b: Fin m)(A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
+variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
 
 
 lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a := by
-   rw [norm_def]
-   rw [Pi.norm_def]
-   norm_cast
-
-   --rw [Pi.nnnorm_def (fun j => A _ j)]
-   --erw [Int.norm_eq_abs]
    let maxr :=fun i =>( Finset.sup Finset.univ (fun j => Int.natAbs (A i j)))  -- maxr i = max_j |A i j|   max of abs val of entries of i-th row
    let x:= (Finset.sup Finset.univ fun i =>(maxr i ))       -- x = max_i maxr_ i
    use x

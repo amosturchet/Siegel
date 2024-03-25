@@ -1,5 +1,5 @@
 import Mathlib
-set_option maxHeartbeats 1000000
+set_option maxHeartbeats 10000000
 
 --statement of Siegel's Lemma, version 1 for the the integers
 open Matrix Finset
@@ -17,91 +17,27 @@ attribute [local instance] Matrix.seminormedAddCommGroup
 
 variable (m n : ℕ) (b: Fin m)(A M : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
 
-
-/- example (n : ℕ) : ((n : NNReal) : ℝ) = n := by
-   simp only [NNReal.coe_nat_cast]
-   --exact (NNReal.coe_natAbs n).symm
-   sorry
- -/
-/- open Finset in
-lemma norm_foo ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖= a := by
-   rw [norm_def, Pi.norm_def]
-   let x := sup Finset.univ fun b => fun j => (A b j).natAbs
-   use sup Finset.univ x
-   simp_rw [Pi.nnnorm_def,←NNReal.coe_natAbs]
-   rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
-   simp [x]
-   have : (sup univ fun b => sup univ fun b_1 => ((Int.natAbs (A b b_1)) : NNReal)) =
-      (sup univ fun b => sup univ fun b_1 => (Int.natAbs (A b b_1))) := by
-      rw [NNReal.coe_nat_cast, NNReal.coe_inj]
-      sorry
-   rw [this]
-   congr 1
-   sorry -/
-
-lemma bar {A B : Type*} [Fintype A] [Fintype B] (f : A → B → ℤ) : ∃ (k : ℕ), ‖f‖ = k := by
-  simp_rw [Pi.norm_def, Pi.nnnorm_def]
-  use sup univ fun b ↦ sup univ fun b' ↦ (f b b').natAbs
-  rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
-  have : (sup Finset.univ fun b ↦ sup univ fun b' ↦ (f b b').natAbs) =
-      sup univ fun b ↦ sup univ fun b' ↦ ((f b b').natAbs : NNReal) := by
-    rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal)]
-    · congr
-      ext a
-      congr
-      simp only [Function.comp_apply]
-      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal)]
-      · rfl
-      · intro x y
-        exact Monotone.map_sup (fun a b h ↦ by simp [h]) x y
-      · simp
-    · intro x y
-      refine Monotone.map_sup (fun a b h ↦ by simp [h]) x y
-    · simp
-  rw [this]
-  congr
-  ext a
-  congr
-  ext a'
-  rw [coe_nnnorm, NNReal.coe_nat_cast, Nat.cast_natAbs, Int.norm_eq_abs]
-
-lemma baz : ∃ (k : ℕ), ‖M‖ = k := bar M
+lemma foo {A : Type*} [Fintype A] (f : A → ℕ) : (sup univ f) = sup univ fun b ↦ (f b : NNReal) :=
+  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
 
 lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a := by
 
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
    constructor
    -- proof of norm is integer
-   ·  rw [norm_def,Pi.norm_def]
-      rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
-      have mono :∀ (x y : ℕ), ↑(x ⊔ y) = (x : NNReal) ⊔ ↑y := by
-         intro x y
-         apply Monotone.map_sup Nat.mono_cast
-      have bot : ↑(⊥ :ℕ)= (⊥ : NNReal)  := by
-         simp only [bot_eq_zero', CharP.cast_eq_zero]
-      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal) mono bot]
-      congr
-      ext a
-      rw [Pi.nnnorm_def]
-      congr
-      simp only [Function.comp_apply]
-      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal) mono bot]
-      congr
-      ext b
-      rw [coe_nnnorm,Int.norm_eq_abs]
-      congr
-      simp only [Int.coe_natAbs]
+   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,← NNReal.coe_nat_cast, NNReal.coe_inj, foo]
+      congr; ext; congr; ext
+      simp [Nat.cast_natAbs, Int.norm_eq_abs]
    -- proof of 1 ≤ x
-   ·  simp only [bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ, true_and]
+   ·  simp only [bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
+     true_and]
       by_contra h
-      apply hA
-      convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀=0
-      exact Iff.symm ext_iff
-      intro i₀ j₀
       push_neg at h
-      rw [<-Int.natAbs_eq_zero,<-Nat.le_zero]
-      specialize h i₀ j₀
-      linarith
+      simp only [lt_one_iff, Int.natAbs_eq_zero] at h
+      apply hA
+      ext i₀ j₀
+      exact h i₀ j₀
+
 
 
 
@@ -116,8 +52,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    let B':= fun j : Fin n => (B: ℤ )
    -- T is the box [0 B]^n
    let T:= Finset.Icc 0 B'
-   let P := fun i : Fin m => B * ( ∑  j : Fin n , Int.toNat (A i j ) : ℤ   )
-   let N := fun i : Fin m => B * ( ∑  j : Fin n , - Int.toNat ( - A i j ) : ℤ  )
+   let P := fun i : Fin m => B * ( ∑  j : Fin n , posPart (A i j ))   --posPart
+   let N := fun i : Fin m => B * ( ∑  j : Fin n , -negPart (A i j ))  --negPart
    -- S is the box where the image of T goes
    let S:= Finset.Icc (N) (P)
 
@@ -132,19 +68,21 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       simp only [Finset.sum_neg_distrib, mul_neg]
       constructor
       all_goals intro i
-      all_goals simp only
-      any_goals simp [N,P]
-      rw [<-neg_mul]
+      --all_goals simp only
+      any_goals simp only [N,P]
+      --rw [<-neg_mul]
       all_goals rw [Finset.mul_sum]
-      all_goals apply Finset.sum_le_sum
-      all_goals intro j hj
+      all_goals unfold dotProduct
+      all_goals gcongr (∑ i_1 : Fin n,?_) with j hj
+      /- all_goals apply Finset.sum_le_sum
+      all_goals intro j hj -/
       all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases
       any_goals simp only [not_le] at hsign
-      rw [Int.toNat_eq_zero.2 (Int.neg_nonpos_of_nonneg hsign)]
-      any_goals try rw [Int.toNat_of_nonneg (by linarith)]
-      any_goals try rw [Int.toNat_of_nonneg hsign]
-      any_goals try rw [Int.toNat_eq_zero.2 (le_of_lt hsign)]
-      any_goals simp only [CharP.cast_eq_zero, mul_zero,mul_neg, neg_mul, neg_neg]
+      any_goals try rw [negPart_eq_zero.2 hsign]
+      any_goals try rw [negPart_eq_neg.2 (le_of_lt hsign)]
+      any_goals try rw [posPart_eq_zero.2 (le_of_lt hsign)]
+      any_goals try rw [posPart_eq_self.2  hsign]
+      all_goals simp only [neg_neg,neg_zero, mul_zero]
       exact mul_nonneg hsign (hv.1 j)
       any_goals exact mul_nonpos_of_nonpos_of_nonneg (le_of_lt hsign) (hv.1 j)
       all_goals rw [<-mul_comm (v j)]
@@ -167,17 +105,16 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS
       intro j
       calc N j ≤ 0 := by
-            apply (mul_nonpos_of_nonneg_of_nonpos (Int.ofNat_nonneg B))
+            apply (mul_nonpos_of_nonneg_of_nonpos (by simp only [cast_nonneg]))
             apply Finset.sum_nonpos
             intro i hi
-            by_cases h : 0 ≤ A j i
-            all_goals simp only [Left.neg_nonpos_iff, cast_nonneg]
+            simp only [Left.neg_nonpos_iff]
+            exact negPart_nonneg _
          _ ≤ P j := by
-            apply mul_nonneg (Int.ofNat_nonneg B)
+            apply mul_nonneg (by simp only [cast_nonneg])
             apply Finset.sum_nonneg
             intro i hi
-            by_cases h1 : 0 ≤ (A j i)
-            all_goals simp only [cast_nonneg]
+            exact posPart_nonneg _
          _ ≤ P j + 1 := by exact Int.le_add_one (le_refl P j)
 
 
@@ -194,24 +131,21 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
 
    have hineq3 : ∀ i : Fin m, (P i - N i + 1) ≤ C := by
       intro i
-      have h : P i - N i + 1 = B * ((∑ j : Fin n, ↑(Int.toNat (A i j))) +  ∑ j : Fin n, ↑(Int.toNat (-A i j))) + 1 := by
-         simp only [P,N,Finset.sum_neg_distrib, mul_neg, sub_neg_eq_add, add_left_inj]
-         rw [<-mul_add]
-      rw [h,<-Finset.sum_add_distrib]
+      simp only [sum_neg_distrib, mul_neg, sub_neg_eq_add, cast_succ, cast_mul,
+        add_le_add_iff_right, P, N]
+      rw [←mul_add, mul_comm _ (B : ℤ)]
+      apply mul_le_mul_of_nonneg_left _ (by simp only [cast_nonneg])
+      rw [←Finset.sum_add_distrib]
       norm_cast
-      apply add_le_add_right
-      rw [mul_comm _ B]
-      apply mul_le_mul (Nat.le_refl B)  _ (Nat.zero_le (∑ x : Fin n, (Int.toNat (A i x) + Int.toNat (-A i x)))) (Nat.zero_le B)
-      calc ∑ x : Fin n, (Int.toNat (A i x) + Int.toNat (-A i x)) ≤ ∑ x : Fin n, a := by
-            apply Finset.sum_le_sum
-            intro j hj
-            rw [Int.toNat_add_toNat_neg_eq_natAbs]
-            have h : Int.natAbs (A i j) ≤ (a : ℝ ):= by
-               rw [<-ha.1,Nat.cast_natAbs,<-Int.norm_eq_abs]
-               exact norm_entry_le_entrywise_sup_norm A
-            exact Nat.cast_le.1 h
-         _ = n * a := by
-            simp only [Finset.sum_const, Finset.card_fin, smul_eq_mul]
+      have h1 : n*a = ∑ x : Fin n, a  := by
+         simp only [sum_const, card_fin, smul_eq_mul]
+      rw [h1,Nat.cast_sum]
+      gcongr with j hj
+      rw [posPart_add_negPart (A i j)]
+      have h2 :  |A i j| ≤ (a : ℝ ) := by
+         rw [←Int.norm_eq_abs, ←ha.1]
+         exact norm_entry_le_entrywise_sup_norm A
+      exact Int.cast_le.1 h2
 
    have hcompexp : (e * (n - m) )= m := by
       simp only [e]

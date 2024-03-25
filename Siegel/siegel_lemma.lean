@@ -2,7 +2,7 @@ import Mathlib
 set_option maxHeartbeats 1000000
 
 --statement of Siegel's Lemma, version 1 for the the integers
-open Matrix
+open Matrix Finset
 open BigOperators
 open Real
 open Nat Set
@@ -15,55 +15,93 @@ open Nat Set
 --questa qui sotto è quella giusta
 attribute [local instance] Matrix.seminormedAddCommGroup
 
-variable (m n : ℕ) (b: Fin m)(A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
+variable (m n : ℕ) (b: Fin m)(A M : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
 
+
+/- example (n : ℕ) : ((n : NNReal) : ℝ) = n := by
+   simp only [NNReal.coe_nat_cast]
+   --exact (NNReal.coe_natAbs n).symm
+   sorry
+ -/
+/- open Finset in
+lemma norm_foo ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖= a := by
+   rw [norm_def, Pi.norm_def]
+   let x := sup Finset.univ fun b => fun j => (A b j).natAbs
+   use sup Finset.univ x
+   simp_rw [Pi.nnnorm_def,←NNReal.coe_natAbs]
+   rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
+   simp [x]
+   have : (sup univ fun b => sup univ fun b_1 => ((Int.natAbs (A b b_1)) : NNReal)) =
+      (sup univ fun b => sup univ fun b_1 => (Int.natAbs (A b b_1))) := by
+      rw [NNReal.coe_nat_cast, NNReal.coe_inj]
+      sorry
+   rw [this]
+   congr 1
+   sorry -/
+
+lemma bar {A B : Type*} [Fintype A] [Fintype B] (f : A → B → ℤ) : ∃ (k : ℕ), ‖f‖ = k := by
+  simp_rw [Pi.norm_def, Pi.nnnorm_def]
+  use sup univ fun b ↦ sup univ fun b' ↦ (f b b').natAbs
+  rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
+  have : (sup Finset.univ fun b ↦ sup univ fun b' ↦ (f b b').natAbs) =
+      sup univ fun b ↦ sup univ fun b' ↦ ((f b b').natAbs : NNReal) := by
+    rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal)]
+    · congr
+      ext a
+      congr
+      simp only [Function.comp_apply]
+      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal)]
+      · rfl
+      · intro x y
+        exact Monotone.map_sup (fun a b h ↦ by simp [h]) x y
+      · simp
+    · intro x y
+      refine Monotone.map_sup (fun a b h ↦ by simp [h]) x y
+    · simp
+  rw [this]
+  congr
+  ext a
+  congr
+  ext a'
+  rw [coe_nnnorm, NNReal.coe_nat_cast, Nat.cast_natAbs, Int.norm_eq_abs]
+
+lemma baz : ∃ (k : ℕ), ‖M‖ = k := bar M
 
 lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a := by
-   rw [norm_def]
-   rw [Pi.norm_def]
-   norm_cast
 
-   --rw [Pi.nnnorm_def (fun j => A _ j)]
-   --erw [Int.norm_eq_abs]
-   let maxr :=fun i =>( Finset.sup Finset.univ (fun j => Int.natAbs (A i j)))  -- maxr i = max_j |A i j|   max of abs val of entries of i-th row
-   let x:= (Finset.sup Finset.univ fun i =>(maxr i ))       -- x = max_i maxr_ i
-   use x
-   constructor   --split goals: 1: ‖A‖ = ↑x, 2: 1 ≤ x
-   apply LE.le.antisymm   -- equality becomes two inequalities
-   --proof of ‖A‖ ≤ ↑x
-   rw [Matrix.norm_le_iff (cast_nonneg x)]
-   intro i₀ j₀
-   rw [Int.norm_eq_abs,Int.abs_eq_natAbs]
-   norm_cast
-   -- have: Int.natAbs (A i₀ j₀) ≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀) why doesn't this work?
-   let f:= fun (k : Fin n) => Int.natAbs (A i₀ k)
-   calc Int.natAbs (A i₀ j₀) = f j₀ := by exact rfl
-      _≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀)
-      _≤ x := by exact Finset.le_sup (Finset.mem_univ i₀)
-   -- proof of ↑x ≤ ‖A‖
-   calc ↑x  ≤ ((Nat.floor (‖A‖)) : ℝ ) := by
-         norm_cast
-         apply Finset.sup_le
-         intro i₀ hi
-         apply Finset.sup_le
-         intro j₀ hj
-         apply Nat.le_floor
-         rw [Nat.cast_natAbs, <-Int.norm_eq_abs]
-         exact norm_entry_le_entrywise_sup_norm A
-      _ ≤ ‖A‖ := by apply Nat.floor_le (norm_nonneg A)
+   use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
+   constructor
+   -- proof of norm is integer
+   ·  rw [norm_def,Pi.norm_def]
+      rw [← NNReal.coe_nat_cast, NNReal.coe_inj]
+      have mono :∀ (x y : ℕ), ↑(x ⊔ y) = (x : NNReal) ⊔ ↑y := by
+         intro x y
+         apply Monotone.map_sup Nat.mono_cast
+      have bot : ↑(⊥ :ℕ)= (⊥ : NNReal)  := by
+         simp only [bot_eq_zero', CharP.cast_eq_zero]
+      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal) mono bot]
+      congr
+      ext a
+      rw [Pi.nnnorm_def]
+      congr
+      simp only [Function.comp_apply]
+      rw [comp_sup_eq_sup_comp ((↑) : ℕ → NNReal) mono bot]
+      congr
+      ext b
+      rw [coe_nnnorm,Int.norm_eq_abs]
+      congr
+      simp only [Int.coe_natAbs]
    -- proof of 1 ≤ x
-   by_contra h
-   apply hA
-   convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀=0
-   exact Iff.symm ext_iff
-   intro i₀ j₀
-   push_neg at h
-   rw [<-Int.natAbs_eq_zero,<-Nat.le_zero]
-   let f:= fun (k : Fin n) => Int.natAbs (A i₀ k)
-   calc Int.natAbs (A i₀ j₀) = f j₀ := by exact rfl
-      _ ≤ maxr i₀ := by exact Finset.le_sup (Finset.mem_univ j₀)
-      _  ≤x := by exact Finset.le_sup (Finset.mem_univ i₀)
-      _  ≤ 0 := by exact lt_succ.mp h
+   ·  simp only [bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ, true_and]
+      by_contra h
+      apply hA
+      convert_to ∀ (i₀ : Fin m) (j₀ : Fin n), A i₀ j₀=0
+      exact Iff.symm ext_iff
+      intro i₀ j₀
+      push_neg at h
+      rw [<-Int.natAbs_eq_zero,<-Nat.le_zero]
+      specialize h i₀ j₀
+      linarith
 
 
 
@@ -95,6 +133,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       constructor
       all_goals intro i
       all_goals simp only
+      any_goals simp [N,P]
       rw [<-neg_mul]
       all_goals rw [Finset.mul_sum]
       all_goals apply Finset.sum_le_sum
@@ -122,7 +161,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
 
    have hcardT : T.card=(B+1)^n := by
       rw [Pi.card_Icc 0 B']
-      simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
+      simp only [B',Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
         Finset.card_fin]
 
    have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS
@@ -156,7 +195,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    have hineq3 : ∀ i : Fin m, (P i - N i + 1) ≤ C := by
       intro i
       have h : P i - N i + 1 = B * ((∑ j : Fin n, ↑(Int.toNat (A i j))) +  ∑ j : Fin n, ↑(Int.toNat (-A i j))) + 1 := by
-         simp only [Finset.sum_neg_distrib, mul_neg, sub_neg_eq_add, add_left_inj]
+         simp only [P,N,Finset.sum_neg_distrib, mul_neg, sub_neg_eq_add, add_left_inj]
          rw [<-mul_add]
       rw [h,<-Finset.sum_add_distrib]
       norm_cast
@@ -175,7 +214,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             simp only [Finset.sum_const, Finset.card_fin, smul_eq_mul]
 
    have hcompexp : (e * (n - m) )= m := by
-      apply div_mul_cancel
+      simp only [e]
+      apply div_mul_cancel₀
       apply sub_ne_zero_of_ne
       norm_cast
       linarith [hn]
@@ -196,7 +236,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       apply rpow_nonneg
       exact_mod_cast Nat.zero_le (n * a)
       rw [<-ha.1]
-      simp only [cast_add, cast_one]
+      simp only [B,cast_add, cast_one]
       exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
       simp only [sub_pos, cast_lt]
       exact hn
@@ -212,7 +252,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             exact hineq3 i
          _  ≤ ↑(n*a*B + n*a)^m := by
             apply pow_le_pow_left (Int.ofNat_nonneg C)
-            simp only [cast_add, cast_mul, cast_one, add_le_add_iff_left]
+            simp only [B,C,cast_add, cast_mul, cast_one, add_le_add_iff_left]
             exact floor_pos.mp hone_le_n_a
          _  < ↑((B + 1) ^ n) := by
             norm_cast
@@ -221,7 +261,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
                _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
                   rw [mul_lt_mul_right]
                   exact hineq4
-                  rw [pow_pos_iff hm]
+                  rw [pow_pos_iff (Nat.pos_iff_ne_zero.mp hm)]
                   exact succ_pos B
                _ = (B + 1) ^ n := by
                   rw [mul_comm,pow_mul_pow_sub]
@@ -263,4 +303,4 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
          exact Int.add_le_add (hxT.2 i) (hyT.1 i)
       _  ≤  (↑n * ‖A‖) ^ e := by
          apply le_trans' (Nat.floor_le (le_trans zero_le_one hineq1))
-         simp only [Int.cast_ofNat, le_refl]
+         simp only [B',Int.cast_ofNat, le_refl]

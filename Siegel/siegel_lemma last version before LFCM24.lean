@@ -1,5 +1,5 @@
 import Mathlib
-set_option maxHeartbeats 1000000
+set_option maxHeartbeats 10000000
 
 --statement of Siegel's Lemma, version 1 for the the integers
 open Matrix
@@ -84,11 +84,12 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       rw [Finset.mem_Icc] at hv
       rw [Finset.mem_Icc]
       unfold Matrix.mulVec
-      -- unfold dotProduct
+      unfold dotProduct
       simp only [Finset.sum_neg_distrib, mul_neg]
       constructor
       all_goals intro i
       all_goals simp only
+      any_goals simp [N,P]
       rw [<-neg_mul]
       all_goals rw [Finset.mul_sum]
       all_goals apply Finset.sum_le_sum
@@ -116,8 +117,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
 
    have hcardT : T.card=(B+1)^n := by
       rw [Pi.card_Icc 0 B']
-      simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
-        Finset.card_fin]
+      simp only [Pi.zero_apply, Int.card_Icc, sub_zero, B',Int.toNat_ofNat_add_one, Finset.prod_const, Finset.card_fin]
+      --simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,Finset.card_fin]
 
    have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS
       intro j
@@ -150,7 +151,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    have hineq3 : ∀ i : Fin m, (P i - N i + 1) ≤ C := by
       intro i
       have h : P i - N i + 1 = B * ((∑ j : Fin n, ↑(Int.toNat (A i j))) +  ∑ j : Fin n, ↑(Int.toNat (-A i j))) + 1 := by
-         simp only [Finset.sum_neg_distrib, mul_neg, sub_neg_eq_add, add_left_inj]
+         simp only [P,N ,Finset.sum_neg_distrib, mul_neg, sub_neg_eq_add, add_left_inj]
          rw [<-mul_add]
       rw [h,<-Finset.sum_add_distrib]
       norm_cast
@@ -169,7 +170,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             simp only [Finset.sum_const, Finset.card_fin, smul_eq_mul]
 
    have hcompexp : (e * (n - m) )= m := by
-      apply div_mul_cancel
+      simp [e]
+      apply div_mul_cancel₀
       apply sub_ne_zero_of_ne
       norm_cast
       linarith [hn]
@@ -190,7 +192,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       apply rpow_nonneg
       exact_mod_cast Nat.zero_le (n * a)
       rw [<-ha.1]
-      simp only [cast_add, cast_one]
+      simp only [B,cast_add, cast_one]
       exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
       simp only [sub_pos, cast_lt]
       exact hn
@@ -206,7 +208,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             exact hineq3 i
          _  ≤ ↑(n*a*B + n*a)^m := by
             apply pow_le_pow_left (Int.ofNat_nonneg C)
-            simp only [cast_add, cast_mul, cast_one, add_le_add_iff_left]
+            simp only [B,C,cast_add, cast_mul, cast_one, add_le_add_iff_left]
             exact floor_pos.mp hone_le_n_a
          _  < ↑((B + 1) ^ n) := by
             norm_cast
@@ -215,7 +217,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
                _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
                   rw [mul_lt_mul_right]
                   exact hineq4
-                  rw [pow_pos_iff hm]
+                  rw [pow_pos_iff (Nat.pos_iff_ne_zero.mp hm)]
                   exact succ_pos B
                _ = (B + 1) ^ n := by
                   rw [mul_comm,pow_mul_pow_sub]
@@ -257,4 +259,4 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
          exact Int.add_le_add (hxT.2 i) (hyT.1 i)
       _  ≤  (↑n * ‖A‖) ^ e := by
          apply le_trans' (Nat.floor_le (le_trans zero_le_one hineq1))
-         simp only [Int.cast_ofNat, le_refl]
+         simp only [B',Int.cast_ofNat, le_refl]

@@ -33,8 +33,8 @@ lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a
       exact h i₀ j₀
 
 lemma mulVec_def : A *ᵥ v = fun x => (fun j => A x j) ⬝ᵥ v := by rfl
-lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
 
+lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
 
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^((m : ℝ )/(n-m))) := by
 
@@ -63,8 +63,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       all_goals simp only [P,N]
       all_goals rw [dotProd_def] -- puts constant inside sum and unfolds def of MulVec
       all_goals gcongr (∑ i_1 : Fin n,?_) with j hj -- gets rid of sums
-      all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
       all_goals rw [<-mul_comm (v j)] --put v j on the left
+      all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
       ·  rw [negPart_eq_zero.2 hsign]
          simp only [neg_zero, mul_zero]
          exact mul_nonneg (hv.1 j) hsign
@@ -79,12 +79,10 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
          simp only [mul_zero]
          exact mul_nonpos_of_nonneg_of_nonpos (hv.1 j) (le_of_lt hsign)
 
-   have hone_le_n_a : 1 ≤ n * a := by exact one_le_mul (one_le_of_lt hn) ha.2
-
    have hineq1 : 1 ≤  (n*‖A‖)^e:= by
       rw [ha.1]
       apply one_le_rpow _ (le_of_lt hePos)
-      exact_mod_cast hone_le_n_a
+      exact_mod_cast one_le_mul (one_le_of_lt hn) ha.2
 
    have hcardT : T.card=(B+1)^n := by
       rw [Pi.card_Icc 0 B']
@@ -94,13 +92,11 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS and also later
       intro j
       calc N j ≤ 0 := by
-            --apply (mul_nonpos_of_nonneg_of_nonpos (by simp only [cast_nonneg]))
             apply Finset.sum_nonpos
             intro i _
             simp only [mul_neg, Left.neg_nonpos_iff]
             exact mul_nonneg (cast_nonneg B) (negPart_nonneg _)
          _ ≤ P j := by
-            --apply mul_nonneg (by simp only [cast_nonneg])
             apply Finset.sum_nonneg
             intro i _
             exact mul_nonneg (cast_nonneg B) (posPart_nonneg _)
@@ -117,19 +113,22 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    let C:=n*a*B+1
 
    have hcompexp : (e * (n - m) )= m := by
-      simp only [e]
+      simp [e]
       apply div_mul_cancel₀
       apply sub_ne_zero_of_ne
-      norm_cast
+      simp only [ne_eq, Nat.cast_inj]
       linarith [hn]
+
+
+   have hone_le_n_a : 1 ≤ n * a := by exact one_le_mul (one_le_of_lt hn) ha.2
 
    have hcardineq : S.card<T.card := by
       zify
       rw [hcardT, hcardS]
       calc (∏ i : Fin m, (P i - N i + 1)) ≤ (C)^m := by   --recall C:=n*a*B+1
             rw [<-Fin.prod_const m (C : ℤ)]
-            apply Finset.prod_le_prod
-            all_goals intro i hi
+            apply Finset.prod_le_prod  --2 goals
+            all_goals intro i _
             linarith [hineq2 i]
             simp only [mul_neg, sum_neg_distrib, sub_neg_eq_add, cast_succ, cast_mul,
               add_le_add_iff_right, P, N]

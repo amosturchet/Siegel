@@ -7,12 +7,6 @@ open BigOperators
 open Real
 open Nat Set
 
---attribute [local instance] Matrix.linftyOpNormedAddCommGroup
---questa norma che ci aveva suggerito Riccardo non va bene perchè è
--- $|A|_\infty = \operatorname{sup}i (\sum_j |A{ij}|)$
-
-
---questa qui sotto è quella giusta
 attribute [local instance] Matrix.seminormedAddCommGroup
 
 variable (m n : ℕ) (b: Fin m)(A M : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ )
@@ -25,9 +19,9 @@ lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
    constructor
    -- proof of norm is integer
-   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,← NNReal.coe_nat_cast, NNReal.coe_inj, foo]
+   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast, NNReal.coe_inj, foo]
       congr; ext; congr; ext
-      simp [Nat.cast_natAbs, Int.norm_eq_abs]
+      simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
    -- proof of 1 ≤ x
    ·  simp only [bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
      true_and]
@@ -38,7 +32,8 @@ lemma norm_mat_int ( hA : A ≠ 0 )  : ∃ (a : ℕ ), ‖A‖=↑a ∧ 1 ≤  a
       ext i₀ j₀
       exact h i₀ j₀
 
-
+lemma mulVec_def : A *ᵥ v = fun x => (fun j => A x j) ⬝ᵥ v := by rfl
+lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
 
 
 theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n → ℤ), t ≠ 0 ∧ A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^((m : ℝ )/(n-m))) := by
@@ -49,46 +44,40 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    have hePos : 0 < e := by exact div_pos (cast_pos.mpr hm)  (sub_pos_of_lt (cast_lt.mpr hn))
    let B:= Nat.floor ((n*‖A‖)^e)
    -- B' is the vector with all components = B
-   let B':= fun j : Fin n => (B: ℤ )
+   let B':= fun _ : Fin n => (B: ℤ )
    -- T is the box [0 B]^n
    let T:= Finset.Icc 0 B'
-   let P := fun i : Fin m => B * ( ∑  j : Fin n , posPart (A i j ))   --posPart
-   let N := fun i : Fin m => B * ( ∑  j : Fin n , -negPart (A i j ))  --negPart
+   let P := fun i : Fin m => B * ( ∑  j : Fin n , posPart (A i j ))
+   let N := fun i : Fin m => B * ( ∑  j : Fin n , -negPart (A i j ))
    -- S is the box where the image of T goes
    let S:= Finset.Icc (N) (P)
 
    --In order to apply Pigeohole we need:  ∀ v ∈  T, (A.mulVec v) ∈  S and S.card < T.card
 
-   have him : ∀ v ∈  T, (A.mulVec v) ∈  S := by  --provare a semplificare
+   have him : ∀ v ∈  T, (A.mulVec v) ∈  S := by
       intro v hv
       rw [Finset.mem_Icc] at hv
       rw [Finset.mem_Icc]
-      unfold Matrix.mulVec
-      -- unfold dotProduct
-      simp only [Finset.sum_neg_distrib, mul_neg]
-      constructor
-      all_goals intro i
-      --all_goals simp only
-      any_goals simp only [N,P]
-      --rw [<-neg_mul]
-      all_goals rw [Finset.mul_sum]
-      all_goals unfold dotProduct
-      all_goals gcongr (∑ i_1 : Fin n,?_) with j hj
-      /- all_goals apply Finset.sum_le_sum
-      all_goals intro j hj -/
-      all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases
-      any_goals simp only [not_le] at hsign
-      any_goals try rw [negPart_eq_zero.2 hsign]
-      any_goals try rw [negPart_eq_neg.2 (le_of_lt hsign)]
-      any_goals try rw [posPart_eq_zero.2 (le_of_lt hsign)]
-      any_goals try rw [posPart_eq_self.2  hsign]
-      all_goals simp only [neg_neg,neg_zero, mul_zero]
-      exact mul_nonneg hsign (hv.1 j)
-      any_goals exact mul_nonpos_of_nonpos_of_nonneg (le_of_lt hsign) (hv.1 j)
-      all_goals rw [<-mul_comm (v j)]
-      exact mul_le_mul_of_nonpos_right (hv.2 j) (le_of_lt hsign)
-      exact mul_le_mul_of_nonneg_right (hv.2 j) hsign
-
+      rw [mulVec_def] --unfolds def of MulVec
+      refine ⟨fun i ↦ ?_, fun i ↦ ?_⟩ --this gives 2 goals
+      all_goals simp only [P,N]
+      all_goals rw [Finset.mul_sum,dotProd_def] -- puts constant inside sum and unfolds def of MulVec
+      all_goals gcongr (∑ i_1 : Fin n,?_) with j hj -- gets rid of sums
+      all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
+      all_goals rw [<-mul_comm (v j)] --put v j on the left
+      ·  rw [negPart_eq_zero.2 hsign]
+         simp only [neg_zero, mul_zero]
+         exact mul_nonneg (hv.1 j) hsign
+      ·  simp only [not_le] at hsign
+         rw [negPart_eq_neg.2 (le_of_lt hsign)]
+         simp only [neg_neg]
+         exact mul_le_mul_of_nonpos_right (hv.2 j) (le_of_lt hsign)
+      ·  rw [posPart_eq_self.2  hsign]
+         exact mul_le_mul_of_nonneg_right (hv.2 j) hsign
+      ·  simp only [not_le] at hsign
+         rw [posPart_eq_zero.2 (le_of_lt hsign)]
+         simp only [mul_zero]
+         exact mul_nonpos_of_nonneg_of_nonpos (hv.1 j) (le_of_lt hsign)
 
    have hone_le_n_a : 1 ≤ n * a := by exact one_le_mul (one_le_of_lt hn) ha.2
 
@@ -107,13 +96,13 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       calc N j ≤ 0 := by
             apply (mul_nonpos_of_nonneg_of_nonpos (by simp only [cast_nonneg]))
             apply Finset.sum_nonpos
-            intro i hi
+            intro i _
             simp only [Left.neg_nonpos_iff]
             exact negPart_nonneg _
          _ ≤ P j := by
             apply mul_nonneg (by simp only [cast_nonneg])
             apply Finset.sum_nonneg
-            intro i hi
+            intro i _
             exact posPart_nonneg _
          _ ≤ P j + 1 := by exact Int.le_add_one (le_refl P j)
 

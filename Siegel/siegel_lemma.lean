@@ -47,8 +47,8 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    let B':= fun _ : Fin n => (B: ℤ )
    -- T is the box [0 B]^n
    let T:= Finset.Icc 0 B'
-   let P := fun i : Fin m => B * ( ∑  j : Fin n , posPart (A i j ))
-   let N := fun i : Fin m => B * ( ∑  j : Fin n , -negPart (A i j ))
+   let P := fun i : Fin m => ( ∑  j : Fin n , B * posPart (A i j ))
+   let N := fun i : Fin m =>  ( ∑  j : Fin n , B * ( -negPart (A i j )))
    -- S is the box where the image of T goes
    let S:= Finset.Icc (N) (P)
 
@@ -61,7 +61,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       rw [mulVec_def] --unfolds def of MulVec
       refine ⟨fun i ↦ ?_, fun i ↦ ?_⟩ --this gives 2 goals
       all_goals simp only [P,N]
-      all_goals rw [Finset.mul_sum,dotProd_def] -- puts constant inside sum and unfolds def of MulVec
+      all_goals rw [dotProd_def] -- puts constant inside sum and unfolds def of MulVec
       all_goals gcongr (∑ i_1 : Fin n,?_) with j hj -- gets rid of sums
       all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
       all_goals rw [<-mul_comm (v j)] --put v j on the left
@@ -91,19 +91,19 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       simp only [B',Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, Finset.prod_const,
         Finset.card_fin]
 
-   have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS
+   have hineq2 : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for hcardS and also later
       intro j
       calc N j ≤ 0 := by
-            apply (mul_nonpos_of_nonneg_of_nonpos (by simp only [cast_nonneg]))
+            --apply (mul_nonpos_of_nonneg_of_nonpos (by simp only [cast_nonneg]))
             apply Finset.sum_nonpos
             intro i _
-            simp only [Left.neg_nonpos_iff]
-            exact negPart_nonneg _
+            simp only [mul_neg, Left.neg_nonpos_iff]
+            exact mul_nonneg (cast_nonneg B) (negPart_nonneg _)
          _ ≤ P j := by
-            apply mul_nonneg (by simp only [cast_nonneg])
+            --apply mul_nonneg (by simp only [cast_nonneg])
             apply Finset.sum_nonneg
             intro i _
-            exact posPart_nonneg _
+            exact mul_nonneg (cast_nonneg B) (posPart_nonneg _)
          _ ≤ P j + 1 := by exact Int.le_add_one (le_refl P j)
 
 
@@ -114,27 +114,7 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       rw [Int.card_Icc_of_le _ _ (hineq2 j)]
       ring
 
-   --from here we start computations to prove  hcardineq : S.card < T.card
-
    let C:=n*a*B+1
-
-   have hineq3 : ∀ i : Fin m, (P i - N i + 1) ≤ C := by
-      intro i
-      simp only [sum_neg_distrib, mul_neg, sub_neg_eq_add, cast_succ, cast_mul,
-        add_le_add_iff_right, P, N]
-      rw [←mul_add, mul_comm _ (B : ℤ)]
-      apply mul_le_mul_of_nonneg_left _ (by simp only [cast_nonneg])
-      rw [←Finset.sum_add_distrib]
-      norm_cast
-      have h1 : n*a = ∑ x : Fin n, a  := by
-         simp only [sum_const, card_fin, smul_eq_mul]
-      rw [h1,Nat.cast_sum]
-      gcongr with j hj
-      rw [posPart_add_negPart (A i j)]
-      have h2 :  |A i j| ≤ (a : ℝ ) := by
-         rw [←Int.norm_eq_abs, ←ha.1]
-         exact norm_entry_le_entrywise_sup_norm A
-      exact Int.cast_le.1 h2
 
    have hcompexp : (e * (n - m) )= m := by
       simp only [e]
@@ -142,27 +122,6 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
       apply sub_ne_zero_of_ne
       norm_cast
       linarith [hn]
-
-   have hineq4 : (n * a)^(m) < (B + 1) ^ (n - m) := by
-      convert_to (n  * (a : ℝ))^m < (B + 1) ^ (n - m)    --pass to real base
-      norm_cast
-      convert_to (n  * (a : ℝ))^(m : ℝ) < ((B + 1): ℝ) ^ ((n : ℝ) - m) -- pass to real exponents. Non obvious as (n : ℝ) - m = n - m needs m < n
-      norm_cast
-      rw [<-rpow_nat_cast ((↑B + 1)) (n-m)]
-      congr
-      exact Mathlib.Tactic.Zify.Nat.cast_sub_of_lt hn
-      have h :   (n  * (a : ℝ))^(m : ℝ) = ((n * a) ^ (m/((n : ℝ)-m)))^ ((n : ℝ)-m) := by
-         rw [<-rpow_mul _ (m / (n - m)) (n-m),hcompexp]
-         exact_mod_cast Nat.zero_le (n * a)
-      rw [h]
-      apply Real.rpow_lt_rpow --this creates 3 goals
-      apply rpow_nonneg
-      exact_mod_cast Nat.zero_le (n * a)
-      rw [<-ha.1]
-      simp only [B,cast_add, cast_one]
-      exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
-      simp only [sub_pos, cast_lt]
-      exact hn
 
    have hcardineq : S.card<T.card := by
       zify
@@ -172,23 +131,55 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
             apply Finset.prod_le_prod
             all_goals intro i hi
             linarith [hineq2 i]
-            exact hineq3 i
+            simp only [mul_neg, sum_neg_distrib, sub_neg_eq_add, cast_succ, cast_mul,
+              add_le_add_iff_right, P, N]
+            rw [(mul_sum Finset.univ (fun i_1 => (A i i_1)⁺) ↑B).symm, (mul_sum Finset.univ (fun i_1 => (A i i_1)⁻) ↑B).symm]
+            rw [←mul_add, mul_comm _ (B : ℤ)]
+            apply mul_le_mul_of_nonneg_left _ (by simp only [cast_nonneg])
+            rw [←Finset.sum_add_distrib]
+            calc ∑ x : Fin n, ((A i x)⁺ + (A i x)⁻) ≤ ∑ x : Fin n, |A i x| := by
+                  gcongr with j _
+                  rw [posPart_add_negPart (A i j)]
+               _ ≤ ∑ x : Fin n, ↑a := by
+                  gcongr with j _
+                  have h2 :  |A i j| ≤ (a : ℝ ) := by
+                     rw [←Int.norm_eq_abs, ←ha.1]
+                     exact norm_entry_le_entrywise_sup_norm A
+                  exact Int.cast_le.1 h2
+               _ = ↑n * ↑a := by simp only [sum_const, card_fin, nsmul_eq_mul]
          _  ≤ ↑(n*a*B + n*a)^m := by
             apply pow_le_pow_left (Int.ofNat_nonneg C)
-            simp only [B,C,cast_add, cast_mul, cast_one, add_le_add_iff_left]
-            exact floor_pos.mp hone_le_n_a
-         _  < ↑((B + 1) ^ n) := by
+            simp only [cast_add, cast_mul, cast_one, add_le_add_iff_left, C, B]
             norm_cast
-            calc (n * a * B + n * a) ^ m =(n * a * (B + 1)) ^ m := by rfl
-               _ = (n * a)^m * (B + 1) ^ m  := by exact Nat.mul_pow (n * a) (B + 1) m
-               _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
-                  rw [mul_lt_mul_right]
-                  exact hineq4
-                  rw [pow_pos_iff (Nat.pos_iff_ne_zero.mp hm)]
-                  exact succ_pos B
-               _ = (B + 1) ^ n := by
-                  rw [mul_comm,pow_mul_pow_sub]
-                  exact (Nat.le_of_lt hn)
+         _ = (n * a * (B + 1)) ^ m := by rfl
+         _ = (n * a)^m * (B + 1) ^ m  := by exact mul_pow (↑n * (a:ℤ )) ((B: ℤ)  + 1) m
+         _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
+            norm_cast
+            rw [mul_lt_mul_right]
+            ·  convert_to (n  * (a : ℝ))^m < (B + 1) ^ (n - m)    --pass to real base
+               ·  norm_cast
+               convert_to (n  * (a : ℝ))^(m : ℝ) < ((B + 1): ℝ) ^ ((n : ℝ) - m) -- pass to real exponents. Non obvious as (n : ℝ) - m = n - m needs m < n
+               ·  norm_cast
+               ·  rw [<-rpow_nat_cast ((↑B + 1)) (n-m)]
+                  congr
+                  exact Mathlib.Tactic.Zify.Nat.cast_sub_of_lt hn
+               convert_to ((n * a) ^ (m/((n : ℝ)-m)))^ ((n : ℝ)-m)  <((B + 1): ℝ) ^ ((n : ℝ) - m)
+               ·  rw [<-rpow_mul _ (m / (n - m)) (n-m),hcompexp]
+                  exact_mod_cast Nat.zero_le (n * a)
+               apply Real.rpow_lt_rpow --this creates 3 goals: 0 ≤ (↑n * ↑a) ^ (↑m / (↑n - ↑m)), (↑n * ↑a) ^ (↑m / (↑n - ↑m)) < ↑B + 1 and 0 < ↑n - ↑m
+               ·  apply rpow_nonneg
+                  exact_mod_cast Nat.zero_le (n * a)
+               ·  rw [<-ha.1]
+                  simp only [B,cast_add, cast_one]
+                  exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
+               ·  simp only [sub_pos, cast_lt]
+                  exact hn
+            ·  rw [pow_pos_iff (Nat.pos_iff_ne_zero.mp hm)]
+               exact succ_pos B
+         _  = ↑((B + 1) ^ n) := by
+            rw [mul_comm,pow_mul_pow_sub]
+            norm_cast
+            exact (le_of_lt hn)
 
    --Pigeonhole
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to hcardineq him with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
@@ -206,24 +197,18 @@ theorem siegelsLemma  (hn: m < n) (hm: 0 < m) (hA : A ≠ 0 ) : ∃ (t: Fin n �
    rw [Finset.mem_Icc] at hxT
    simp only [col_apply, Pi.sub_apply, ge_iff_le]
    rw [Int.norm_eq_abs]
-   push_cast
-   rw [abs_le]
-   constructor
-   calc -(↑n * ‖A‖) ^ e ≤ - B' i := by
-         simp only [Int.cast_ofNat, neg_le_neg_iff]
-         exact (Nat.floor_le (le_trans zero_le_one hineq1))
-      _  ≤ - ↑(y i) := by
+   calc ↑|x i - y i| ≤ ((B' i) : ℝ ) := by
+         --simp only [Int.cast_abs, Int.cast_sub]
          norm_cast
-         simp only [neg_le_neg_iff]
-         exact hyT.2 i
-      _  ≤ ↑(x i) - ↑(y i) := by
-         simp only [neg_le_sub_iff_le_add, le_add_iff_nonneg_left, Int.cast_nonneg]
-         exact hxT.1 i
-   calc ↑(x i) - ↑(y i) ≤ ↑(B' i) := by
-         norm_cast
-         simp only [tsub_le_iff_right]
-         rw [<-add_zero ((x i))]
-         exact Int.add_le_add (hxT.2 i) (hyT.1 i)
-      _  ≤  (↑n * ‖A‖) ^ e := by
+         rw [abs_le]
+         constructor
+         ·  simp only [neg_le_sub_iff_le_add]
+            apply le_trans (hyT.2 i) _
+            simp only [le_add_iff_nonneg_left]
+            exact hxT.1 i
+         ·  apply le_trans _ (hxT.2 i)
+            simp only [tsub_le_iff_right, le_add_iff_nonneg_right]
+            exact hyT.1 i
+      _ ≤  (↑n * ‖A‖) ^ e := by
          apply le_trans' (Nat.floor_le (le_trans zero_le_one hineq1))
          simp only [B',Int.cast_ofNat, le_refl]

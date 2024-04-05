@@ -26,6 +26,65 @@ coefficients.
 See [Thales600BC] for the original account on Xyzzyology.
 -/
 
+/- We set ‖⬝‖ to be Matrix.seminormedAddCommGroup  -/
+attribute [local instance] Matrix.seminormedAddCommGroup
+
+
+section Integral_matrices
+
+open Matrix Finset Real Nat BigOperators
+
+variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ)
+
+/- sup commutes with casting from Nat to NNReal -/
+lemma comp_sup_eq_sup_comp_nat_NNReal {A : Type*} [Fintype A] (f : A → ℕ) (s : Finset A) :
+      (sup s f) = sup s fun b ↦ (f b : NNReal) :=
+  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
+
+lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
+   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast,
+      NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
+   congr; ext; congr; ext
+   simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
+
+/- The norm of an integral matrix is the cast of a natural number -/
+lemma norm_mat_is_Nat' : ∃ (a : ℕ), ‖A‖=↑a := by
+   use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
+   exact norm_int_mat_def _ _ _
+
+/- Definition of mulVec -/
+lemma mulVec_def : A *ᵥ v = fun x => (fun j => A x j) ⬝ᵥ v := by rfl
+
+/- Definition of dotProd -/
+lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
+
+end Integral_matrices
+
+section Computations
+
+open Matrix Finset Real Nat BigOperators Set
+
+variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
+(hm: 0 < m) (hA_nezero : A ≠ 0)(h_norm_int : ‖A‖ = ↑a)
+
+lemma pos_norm_of_nonzero : 1 ≤ a := by
+   convert_to 1 ≤ ( a : ℝ ); simp only [one_le_cast]
+   rw [← h_norm_int,norm_int_mat_def ]
+   simp only [one_le_cast, bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
+     true_and]
+   by_contra h
+   push_neg at h
+   simp only [lt_one_iff, Int.natAbs_eq_zero] at h
+   apply hA_nezero
+   ext i₀ j₀
+   simp only [zero_apply]
+   exact h i₀ j₀
+
+end Computations
+
+
+
+
 open Matrix Finset
 open BigOperators
 open Real
@@ -33,22 +92,19 @@ open Nat Set
 
 noncomputable section
 
-attribute [local instance] Matrix.seminormedAddCommGroup
 
 variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
 (hm: 0 < m) (hA : A ≠ 0 )(ha : ‖A‖ = ↑a ∧ 1 ≤ a )
 
 
 
-lemma foo {A : Type*} [Fintype A] (f : A → ℕ) : (sup univ f) = sup univ fun b ↦ (f b : NNReal) :=
-  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
 
 lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
 
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
    constructor
    -- proof of norm is integer
-   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast, NNReal.coe_inj, foo]
+   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast, NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
       congr; ext; congr; ext
       simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
    -- proof of 1 ≤ x
@@ -61,9 +117,6 @@ lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
       ext i₀ j₀
       exact h i₀ j₀
 
-lemma mulVec_def : A *ᵥ v = fun x => (fun j => A x j) ⬝ᵥ v := by rfl
-
-lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
 
 
 --Some definitions and relative properties
@@ -124,7 +177,7 @@ lemma Im_T_subseteq_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
 
 --Preparation for (2)
 
-lemma card_t_eq : (Finset.Icc 0 B').card = (B+1)^n := by
+lemma card_T_eq : (Finset.Icc 0 B').card = (B+1)^n := by
    rw [Pi.card_Icc 0 B']
    simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, prod_const, card_fin]
 
@@ -160,7 +213,7 @@ lemma one_le_n_mul_a : 1 ≤ n * a := one_le_mul (one_le_of_lt hn) ha.2
 
 lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
       zify
-      rw [card_t_eq, card_S_eq]
+      rw [card_T_eq, card_S_eq]
       calc
       ∏ i : Fin m, (P i - N i + 1) ≤ (n*a*B+1)^m := by   --recall C:=n*a*B+1
             rw [<-Fin.prod_const m ((n*a*B+1): ℤ)]

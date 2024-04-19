@@ -29,15 +29,36 @@ See [Thales600BC] for the original account on Xyzzyology.
 /- We set ‖⬝‖ to be Matrix.seminormedAddCommGroup  -/
 attribute [local instance] Matrix.seminormedAddCommGroup
 
+section General_matrices
+
+open Matrix
+
+/- Definition of mulVec -/
+lemma mulVec_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAssocSemiring α]  [Fintype m] [Fintype n]  (v : n → α) (M : Matrix m n α) : M *ᵥ v = fun i => Finset.sum Finset.univ fun (j : n) => M i j * v j := by rfl
+
+/- A non-zero integral matrix has postive norm -/
+lemma norm_pos_of_nonzero {m : Type u_3}  {n : Type u_4}  {α : Type u_5}  [Fintype m] [Fintype n]  [NormedAddCommGroup α]  (A : Matrix m n α) (hA_nezero : A ≠ 0)  : 0 < ‖A‖  := by
+   by_contra h
+   push_neg at h
+   apply hA_nezero
+   ext i j
+   simp only [zero_apply]
+   rw [norm_le_iff Nonneg.zero.proof_1] at h
+   specialize h i j
+   rw [norm_le_zero_iff] at h
+   exact h
+
+
+end General_matrices
 
 section Integral_matrices
 
 open Matrix Finset Real Nat BigOperators
 
-variable (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ)
+variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ)
 
 /- sup commutes with casting from Nat to NNReal -/
-lemma comp_sup_eq_sup_comp_nat_NNReal {A : Type*} [Fintype A] (f : A → ℕ) (s : Finset A) :
+lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s : Finset S) :
       (sup s f) = sup s fun b ↦ (f b : NNReal) :=
   comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
 
@@ -48,37 +69,51 @@ lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b 
    simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
 
 /- The norm of an integral matrix is the cast of a natural number -/
-lemma norm_mat_is_Nat' : ∃ (a : ℕ), ‖A‖=↑a := by
+lemma norm_mat_is_Nat : ∃ (a : ℕ), ‖A‖=↑a := by
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
    exact norm_int_mat_def _ _ _
 
-/- Definition of mulVec -/
-lemma mulVec_def : A *ᵥ v = fun x => (fun j => A x j) ⬝ᵥ v := by rfl
 
-/- Definition of dotProd -/
-lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl
+/- Definition of dotProd
+lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl-/
 
-end Integral_matrices
 
-section Computations
 
-open Matrix Finset Real Nat BigOperators Set
+lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
+   convert_to 0 < ( a : ℝ )
+   · simp only [cast_pos]
+     exact succ_le
+   rw [← h_norm_int]
+   exact norm_pos_of_nonzero A hA_nezero
 
-variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
-(hm: 0 < m) (hA_nezero : A ≠ 0)(h_norm_int : ‖A‖ = ↑a)
 
-lemma pos_norm_of_nonzero : 1 ≤ a := by
+/- lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
    convert_to 1 ≤ ( a : ℝ ); simp only [one_le_cast]
    rw [← h_norm_int,norm_int_mat_def ]
    simp only [one_le_cast, bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
-     true_and]
+      true_and]
    by_contra h
    push_neg at h
    simp only [lt_one_iff, Int.natAbs_eq_zero] at h
    apply hA_nezero
    ext i₀ j₀
    simp only [zero_apply]
-   exact h i₀ j₀
+   exact h i₀ j₀ -/
+
+
+
+end Integral_matrices
+
+
+section Computations
+
+open Matrix Finset Real Nat BigOperators Set
+
+variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
+(hm: 0 < m)
+
+
+
 
 end Computations
 
@@ -99,6 +134,9 @@ variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn:
 
 
 
+--Get rid of this
+
+
 lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
 
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
@@ -116,6 +154,7 @@ lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
       apply hA
       ext i₀ j₀
       exact h i₀ j₀
+
 
 
 
@@ -157,8 +196,8 @@ lemma Im_T_subseteq_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
    rw [mulVec_def] --unfolds def of MulVec
    refine ⟨fun i ↦ ?_, fun i ↦ ?_⟩ --this gives 2 goals
    all_goals simp only [mul_neg]
-   all_goals rw [dotProd_def] -- unfolds def of MulVec
-   all_goals gcongr (∑ i_1 : Fin n,?_) with j hj -- gets rid of sums
+   --all_goals rw [dotProd_def] -- unfolds def of MulVec
+   all_goals gcongr (∑ i_1 : Fin n,?_) with j _ -- gets rid of sums
    all_goals rw [<-mul_comm (v j)] -- moves A i j to the right of the products
    all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
    ·  rw [negPart_eq_zero.2 hsign]
@@ -182,10 +221,10 @@ lemma card_T_eq : (Finset.Icc 0 B').card = (B+1)^n := by
    simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, prod_const, card_fin]
 
 lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n*‖A‖)^e := by
-   rcases norm_mat_int _ _ A hA with ⟨ a, ha⟩
-   rw [ha.1]
+   rcases norm_mat_is_Nat _ _ A with ⟨ a, ha⟩
+   rw [ha]
    apply one_le_rpow _ (le_of_lt (hePos m n hn hm))
-   exact_mod_cast one_le_mul (one_le_of_lt hn) ha.2
+   exact_mod_cast one_le_mul (one_le_of_lt hn) (one_le_norm_of_nonzero _ _ _ A hA ha)
 
 lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for card_S_eq and also later
    intro j

@@ -34,19 +34,9 @@ section General_matrices
 open Matrix
 
 /- Definition of mulVec -/
-lemma mulVec_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAssocSemiring α]  [Fintype m] [Fintype n]  (v : n → α) (M : Matrix m n α) : M *ᵥ v = fun i => Finset.sum Finset.univ fun (j : n) => M i j * v j := by rfl
-
-/- A non-zero integral matrix has postive norm -/
-lemma norm_pos_of_nonzero {m : Type u_3}  {n : Type u_4}  {α : Type u_5}  [Fintype m] [Fintype n]  [NormedAddCommGroup α]  (A : Matrix m n α) (hA_nezero : A ≠ 0)  : 0 < ‖A‖  := by
-   by_contra h
-   push_neg at h
-   apply hA_nezero
-   ext i j
-   simp only [zero_apply]
-   rw [norm_le_iff Nonneg.zero.proof_1] at h
-   specialize h i j
-   rw [norm_le_zero_iff] at h
-   exact h
+lemma mulVec_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAssocSemiring α]
+      [Fintype m] [Fintype n]  (v : n → α) (M : Matrix m n α) :
+      M *ᵥ v = fun i => Finset.sum Finset.univ fun (j : n) => M i j * v j := by rfl
 
 
 end General_matrices
@@ -84,7 +74,7 @@ lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a)
    · simp only [cast_pos]
      exact succ_le
    rw [← h_norm_int]
-   exact norm_pos_of_nonzero A hA_nezero
+   exact norm_pos_iff'.mpr hA_nezero
 
 
 /- lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
@@ -129,7 +119,7 @@ noncomputable section
 
 
 variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
-(hm: 0 < m) (hA : A ≠ 0 )(ha : ‖A‖ = ↑a ∧ 1 ≤ a )
+(hm: 0 < m) (hA : A ≠ 0 ) (ha : ‖A‖ = ↑a) (h_one_le_a : 1 ≤ a)
 
 
 
@@ -137,7 +127,7 @@ variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn:
 --Get rid of this
 
 
-lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
+/- lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
 
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
    constructor
@@ -155,7 +145,7 @@ lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
       ext i₀ j₀
       exact h i₀ j₀
 
-
+ -/
 
 
 --Some definitions and relative properties
@@ -246,7 +236,9 @@ lemma card_S_eq : (Finset.Icc N P).card = (∏ i : Fin m, (P i - N i + 1)):= by
    rw [Int.card_Icc_of_le _ _ (N_j_le_P_j_add_one m n A j)]
    ring
 
-lemma one_le_n_mul_a : 1 ≤ n * a := one_le_mul (one_le_of_lt hn) ha.2
+--lemma one_le_n_mul_a : 1 ≤ n * a :=  one_le_mul (one_le_of_lt hn) h_one_le_a
+   --
+
 
 -- (2)
 
@@ -273,7 +265,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
                _ ≤ ∑ x : Fin n, ↑a := by
                   gcongr with j _
                   have h2 : |A i j| ≤ (a : ℝ) := by
-                     rw [←Int.norm_eq_abs, ←ha.1]
+                     rw [←Int.norm_eq_abs, ← ha]
                      exact norm_entry_le_entrywise_sup_norm A
                   exact Int.cast_le.1 h2
                _ = ↑n * ↑a := by simp only [sum_const, card_fin, nsmul_eq_mul]
@@ -282,7 +274,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             apply pow_le_pow_left (Int.ofNat_nonneg (n*a*B+1))
             rw [mul_add]
             simp only [cast_succ, cast_mul, mul_one, add_le_add_iff_left]
-            exact_mod_cast one_le_n_mul_a m n a A hn ha
+            exact_mod_cast one_le_mul (one_le_of_lt hn) h_one_le_a
          _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
             simp only [gt_iff_lt, Int.succ_ofNat_pos, pow_pos, mul_lt_mul_right]
             convert_to (n  * (a : ℝ))^m < (B + 1)^(n - m)    --pass to real base
@@ -301,7 +293,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
                                           (↑n * ↑a) ^ (↑m / (↑n - ↑m)) < ↑B + 1 and 0 < ↑n - ↑m -/
             ·  apply rpow_nonneg
                exact_mod_cast Nat.zero_le (n * a)
-            ·  rw [<-ha.1]
+            ·  rw [<- ha]
                exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
             ·  simp only [sub_pos, cast_lt]
                exact hn
@@ -315,10 +307,12 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
 theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
       A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^((m : ℝ )/(n-m))) := by
 
-   rcases norm_mat_int _ _ A hA with ⟨ a, ha⟩
+   rcases norm_mat_is_Nat _ _ A with ⟨ a, ha⟩
+
+   --rcases norm_mat_int _ _ A hA with ⟨ a, ha⟩
 
    --Pigeonhole
-   rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to (card_S_le_card_T m n a A hn ha) (Im_T_subseteq_S m n A)
+   rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to (card_S_le_card_T m n a A hn ha (one_le_norm_of_nonzero _ _ _ A hA ha)) (Im_T_subseteq_S m n A)
                                                             with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x-y
    -- proof that x - y ≠ 0

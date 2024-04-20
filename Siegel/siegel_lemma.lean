@@ -41,11 +41,13 @@ lemma mulVec_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAsso
 
 end General_matrices
 
+variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
+(hm: 0 < m)
+
+
 section Integral_matrices
 
 open Matrix Finset Real Nat BigOperators
-
-variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ)
 
 /- sup commutes with casting from Nat to NNReal -/
 lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s : Finset S) :
@@ -77,75 +79,11 @@ lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a)
    exact norm_pos_iff'.mpr hA_nezero
 
 
-/- lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
-   convert_to 1 ≤ ( a : ℝ ); simp only [one_le_cast]
-   rw [← h_norm_int,norm_int_mat_def ]
-   simp only [one_le_cast, bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
-      true_and]
-   by_contra h
-   push_neg at h
-   simp only [lt_one_iff, Int.natAbs_eq_zero] at h
-   apply hA_nezero
-   ext i₀ j₀
-   simp only [zero_apply]
-   exact h i₀ j₀ -/
-
-
 
 end Integral_matrices
 
 
-section Computations
-
-open Matrix Finset Real Nat BigOperators Set
-
-variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
-(hm: 0 < m)
-
-
-
-
-end Computations
-
-
-
-
-open Matrix Finset
-open BigOperators
-open Real
-open Nat Set
-
-noncomputable section
-
-
-variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn: m < n)
-(hm: 0 < m) (hA : A ≠ 0 ) (ha : ‖A‖ = ↑a) (h_one_le_a : 1 ≤ a)
-
-
-
-
---Get rid of this
-
-
-/- lemma norm_mat_int : ∃ (a : ℕ), ‖A‖=↑a ∧ 1 ≤  a := by
-
-   use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
-   constructor
-   -- proof of norm is integer
-   ·  simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast, NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
-      congr; ext; congr; ext
-      simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
-   -- proof of 1 ≤ x
-   ·  simp only [bot_eq_zero', gt_iff_lt, zero_lt_one, Finset.le_sup_iff, Finset.mem_univ,
-     true_and]
-      by_contra h
-      push_neg at h
-      simp only [lt_one_iff, Int.natAbs_eq_zero] at h
-      apply hA
-      ext i₀ j₀
-      exact h i₀ j₀
-
- -/
+open Nat BigOperators
 
 
 --Some definitions and relative properties
@@ -174,6 +112,7 @@ local notation3  "P" => fun i : Fin m => (∑ j : Fin n, B * posPart (A i j))
 local notation3  "N" => fun i : Fin m =>  (∑ j : Fin n, B * (-negPart (A i j)))
    -- S is the box where the image of T goes
 local notation3  "S" => Finset.Icc N P
+
 
 --In order to apply Pigeohole we need:  (1) ∀ v ∈  T, (A.mulVec v) ∈  S and (2) S.card < T.card
 
@@ -206,9 +145,14 @@ lemma Im_T_subseteq_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
 
 --Preparation for (2)
 
+open Finset
+
 lemma card_T_eq : (Finset.Icc 0 B').card = (B+1)^n := by
    rw [Pi.card_Icc 0 B']
    simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, prod_const, card_fin]
+
+open Real
+variable  (hA : A ≠ 0 ) (ha : ‖A‖ = ↑a)
 
 lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n*‖A‖)^e := by
    rcases norm_mat_is_Nat _ _ A with ⟨ a, ha⟩
@@ -238,9 +182,12 @@ lemma card_S_eq : (Finset.Icc N P).card = (∏ i : Fin m, (P i - N i + 1)):= by
 
 --lemma one_le_n_mul_a : 1 ≤ n * a :=  one_le_mul (one_le_of_lt hn) h_one_le_a
    --
+open Matrix
 
+variable (h_one_le_a : 1 ≤ a)
 
 -- (2)
+
 
 lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
       zify

@@ -1,4 +1,17 @@
-import Mathlib
+import Mathlib.Analysis.Matrix
+import Mathlib.Data.Finset.Basic
+import Mathlib.Algebra.Order.Group.PosPart
+import Mathlib.Algebra.BigOperators.Basic
+import Mathlib.Order.Interval.Finset.Defs
+import Mathlib.Data.Real.NNReal
+import Mathlib.Data.Matrix.Basic
+import Mathlib.Algebra.Order.Floor
+import Mathlib.Data.Int.Interval
+import Mathlib.Data.Pi.Interval
+import Mathlib.Analysis.Normed.Group.Basic
+--import Mathlib
+
+--import Mathlib
 
 -- set_option maxHeartbeats 10000000
 
@@ -55,10 +68,9 @@ lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s
   comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
 
 lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
-   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def,←NNReal.coe_nat_cast,
-      NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
+   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
    congr; ext; congr; ext
-   simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_nat_cast, cast_natAbs]
+   simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_natCast, cast_natAbs]
 
 /- The norm of an integral matrix is the cast of a natural number -/
 lemma norm_mat_is_Nat : ∃ (a : ℕ), ‖A‖=↑a := by
@@ -212,7 +224,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
                _ ≤ ∑ x : Fin n, ↑a := by
                   gcongr with j _
                   have h2 : |A i j| ≤ (a : ℝ) := by
-                     rw [←Int.norm_eq_abs, ← ha]
+                     rw [Int.cast_abs, ←Int.norm_eq_abs, ← ha]
                      exact norm_entry_le_entrywise_sup_norm A
                   exact Int.cast_le.1 h2
                _ = ↑n * ↑a := by simp only [sum_const, card_fin, nsmul_eq_mul]
@@ -229,7 +241,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             convert_to (n  * (a : ℝ))^(m : ℝ) < ((B + 1): ℝ)^((n : ℝ) - m) /- pass to real
                                     exponents. Non obvious as (n : ℝ) - m = n - m needs m < n -/
             ·  norm_cast
-            ·  rw [<-rpow_nat_cast ((↑B + 1)) (n-m)]
+            ·  rw [<-rpow_natCast ((↑B + 1)) (n-m)]
                congr
                exact Mathlib.Tactic.Zify.Nat.cast_sub_of_lt hn
             convert_to ((n * a) ^ (m/((n : ℝ)-m)))^ ((n : ℝ)-m)  <((B + 1): ℝ) ^ ((n : ℝ) - m)
@@ -274,7 +286,7 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
    rw [Finset.mem_Icc] at hyT
    rw [Finset.mem_Icc] at hxT
    simp only [col_apply, Pi.sub_apply, ge_iff_le]
-   rw [Int.norm_eq_abs]
+   rw [Int.norm_eq_abs, ← Int.cast_abs]
    calc
    ↑|x i - y i|≤ ((B' i) : ℝ ) := by
                   rw [Int.cast_abs, Int.cast_sub]
@@ -293,6 +305,6 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
             _  ≤  (↑n * ‖A‖) ^ e := by
                   apply le_trans' (Nat.floor_le (le_trans zero_le_one
                         (one_le_n_mul_norm_A_pow_e m n A hn hm hA)))
-                  simp only [Int.cast_ofNat, le_refl]
+                  simp only [Int.cast_natCast, le_refl]
 --#find_home! norm_mat_int
 --#lint

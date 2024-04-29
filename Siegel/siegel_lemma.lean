@@ -65,7 +65,7 @@ open Matrix Finset Real Nat BigOperators
 /- sup commutes with casting from Nat to NNReal -/
 lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s : Finset S) :
       (sup s f) = sup s fun b ↦ (f b : NNReal) :=
-  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp)
+  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp only [bot_eq_zero', CharP.cast_eq_zero])
 
 lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
    simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
@@ -110,7 +110,7 @@ lemma hcompexp : (e * (n - m)) = m := by
       apply div_mul_cancel₀
       apply sub_ne_zero_of_ne
       simp only [ne_eq, Nat.cast_inj]
-      linarith [hn]
+      linarith only [hn]
 
 
 local notation3 "B" => Nat.floor (((n : ℝ) * ‖A‖) ^ e)
@@ -167,10 +167,10 @@ open Real
 variable  (hA : A ≠ 0 ) (ha : ‖A‖ = ↑a)
 
 lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n*‖A‖)^e := by
-   rcases norm_mat_is_Nat _ _ A with ⟨ a, ha⟩
+   rcases norm_mat_is_Nat m n A with ⟨ a, ha⟩
    rw [ha]
    apply one_le_rpow _ (le_of_lt (hePos m n hn hm))
-   exact_mod_cast one_le_mul (one_le_of_lt hn) (one_le_norm_of_nonzero _ _ _ A hA ha)
+   exact_mod_cast one_le_mul (one_le_of_lt hn) (one_le_norm_of_nonzero m n a A hA ha)
 
 lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for card_S_eq and also later
    intro j
@@ -178,12 +178,12 @@ lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for 
          apply Finset.sum_nonpos
          intro i _
          simp only [mul_neg, Left.neg_nonpos_iff]
-         exact mul_nonneg (cast_nonneg B) (negPart_nonneg _)
+         exact mul_nonneg (cast_nonneg B) (negPart_nonneg (A j i))
       _ ≤ P j +1 := by
-         apply le_trans _ (Int.le_add_one (le_refl P j))
+         apply le_trans ?_ (Int.le_add_one (le_refl P j))
          apply Finset.sum_nonneg
          intro i _
-         exact mul_nonneg (cast_nonneg B) (posPart_nonneg _)
+         exact mul_nonneg (cast_nonneg B) (posPart_nonneg (A j i))
 
 lemma card_S_eq : (Finset.Icc N P).card = (∏ i : Fin m, (P i - N i + 1)):= by
    rw [Pi.card_Icc N P,Nat.cast_prod]
@@ -205,11 +205,11 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
       zify
       rw [card_T_eq, card_S_eq]
       calc
-      ∏ i : Fin m, (P i - N i + 1) ≤ (n*a*B+1)^m := by   --recall C:=n*a*B+1
+      ∏ i : Fin m, (P i - N i + 1) ≤ (n*a*B+1)^m := by
             rw [<-Fin.prod_const m ((n*a*B+1): ℤ)]
             apply Finset.prod_le_prod  --2 goals
             all_goals intro i _
-            linarith [N_j_le_P_j_add_one m n A i] --first goal done
+            linarith only [N_j_le_P_j_add_one m n A i] --first goal done
 
             simp only [mul_neg, sum_neg_distrib, sub_neg_eq_add, cast_succ, cast_mul,
               add_le_add_iff_right]
@@ -236,8 +236,8 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             exact_mod_cast one_le_mul (one_le_of_lt hn) h_one_le_a
          _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
             simp only [gt_iff_lt, Int.succ_ofNat_pos, pow_pos, mul_lt_mul_right]
-            convert_to (n  * (a : ℝ))^m < (B + 1)^(n - m)    --pass to real base
-            ·  norm_cast
+            convert_to (n  * (a : ℝ))^m < (B + 1)^(n - m); norm_cast --pass to real base
+
             convert_to (n  * (a : ℝ))^(m : ℝ) < ((B + 1): ℝ)^((n : ℝ) - m) /- pass to real
                                     exponents. Non obvious as (n : ℝ) - m = n - m needs m < n -/
             ·  norm_cast
@@ -266,9 +266,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
 theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
       A.mulVec t = 0 ∧ ‖t‖ ≤ ((n*‖A‖)^((m : ℝ )/(n-m))) := by
 
-   rcases norm_mat_is_Nat _ _ A with ⟨ a, ha⟩
-
-   --rcases norm_mat_int _ _ A hA with ⟨ a, ha⟩
+   rcases norm_mat_is_Nat _ _ A with ⟨a, ha⟩
 
    --Pigeonhole
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to (card_S_le_card_T m n a A hn ha (one_le_norm_of_nonzero _ _ _ A hA ha)) (Im_T_subseteq_S m n A)

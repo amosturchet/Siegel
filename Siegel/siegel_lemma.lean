@@ -31,8 +31,8 @@ coefficients.
 
 ## Notation
 
- - `‖_‖ ` : Matrix.seminormedAddCommGroup is the sup norm, the maximum of the absolute values of the
- entries of the matrix
+ - `‖_‖ ` : Matrix.seminormedAddCommGroup is the sup norm, the maximum of the absolute values of
+ the entries of the matrix
 
 ## References
 
@@ -68,7 +68,8 @@ lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s
   comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp only [bot_eq_zero', CharP.cast_eq_zero])
 
 lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
-   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj, comp_sup_eq_sup_comp_nat_NNReal]
+   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj,
+      comp_sup_eq_sup_comp_nat_NNReal]
    congr; ext; congr; ext
    simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_natCast, cast_natAbs]
 
@@ -172,7 +173,7 @@ lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n*‖A‖)^e := by
    apply one_le_rpow _ (le_of_lt (hePos m n hn hm))
    exact_mod_cast one_le_mul (one_le_of_lt hn) (one_le_norm_of_nonzero m n a A hA ha)
 
-lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by    --needed for card_S_eq and also later
+lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by   --needed for card_S_eq and also later
    intro j
    calc N j ≤ 0 := by
          apply Finset.sum_nonpos
@@ -269,8 +270,9 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
    rcases norm_mat_is_Nat _ _ A with ⟨a, ha⟩
 
    --Pigeonhole
-   rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to (card_S_le_card_T m n a A hn ha (one_le_norm_of_nonzero _ _ _ A hA ha)) (Im_T_subseteq_S m n A)
-                                                            with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
+   rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to
+         (card_S_le_card_T m n a A hn ha (one_le_norm_of_nonzero _ _ _ A hA ha))
+         (Im_T_subseteq_S m n A) with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x-y
    -- proof that x - y ≠ 0
    refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
@@ -279,7 +281,8 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
    rw [sub_eq_add_neg,A.mulVec_add, A.mulVec_neg]
    exact hfeq
    ---Inequality
-   rw [<-Matrix.norm_col,norm_le_iff (le_trans zero_le_one (one_le_n_mul_norm_A_pow_e m n A hn hm hA))]
+   rw [← Matrix.norm_col,norm_le_iff
+         (le_trans zero_le_one (one_le_n_mul_norm_A_pow_e m n A hn hm hA))]
    intro i j
    rw [Finset.mem_Icc] at hyT
    rw [Finset.mem_Icc] at hxT

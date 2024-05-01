@@ -218,17 +218,15 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
                (mul_sum Finset.univ (fun i_1 => (A i i_1)⁻) ↑B).symm,←mul_add, mul_comm _ (B : ℤ)]
             apply mul_le_mul_of_nonneg_left _ (by simp only [cast_nonneg])
             rw [←Finset.sum_add_distrib]
-            calc
-            ∑ x : Fin n, ((A i x)⁺ + (A i x)⁻) ≤ ∑ x : Fin n, |A i x| := by
-                  gcongr with j _
-                  rw [posPart_add_negPart (A i j)]
-               _ ≤ ∑ x : Fin n, ↑a := by
-                  gcongr with j _
-                  have h2 : |A i j| ≤ (a : ℝ) := by
+            have h1 : ↑n * (a : ℤ) = ∑ x : Fin n, (a : ℤ) := by simp only [sum_const,
+              card_fin, nsmul_eq_mul]
+            rw [h1]
+            gcongr with j _
+            rw [posPart_add_negPart (A i j)]
+            have h2 : |A i j| ≤ (a : ℝ) := by
                      rw [Int.cast_abs, ←Int.norm_eq_abs, ← ha]
                      exact norm_entry_le_entrywise_sup_norm A
-                  exact Int.cast_le.1 h2
-               _ = ↑n * ↑a := by simp only [sum_const, card_fin, nsmul_eq_mul]
+            exact Int.cast_le.1 h2
          _  ≤ (n * a)^m * (B + 1)^m := by
             rw [←mul_pow (↑n * (a:ℤ )) ((B: ℤ)  + 1) m]
             apply pow_le_pow_left (Int.ofNat_nonneg (n*a*B+1))
@@ -237,26 +235,23 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             exact_mod_cast one_le_mul (one_le_of_lt hn) h_one_le_a
          _ < (B + 1) ^ (n - m) * (B + 1) ^ m := by
             simp only [gt_iff_lt, Int.succ_ofNat_pos, pow_pos, mul_lt_mul_right]
-            convert_to (n  * (a : ℝ))^m < (B + 1)^(n - m); norm_cast --pass to real base
-
-            convert_to (n  * (a : ℝ))^(m : ℝ) < ((B + 1): ℝ)^((n : ℝ) - m) /- pass to real
-                                    exponents. Non obvious as (n : ℝ) - m = n - m needs m < n -/
-            ·  norm_cast
-            ·  rw [<-rpow_natCast ((↑B + 1)) (n-m)]
-               congr
-               exact Mathlib.Tactic.Zify.Nat.cast_sub_of_lt hn
-            convert_to ((n * a) ^ (m/((n : ℝ)-m)))^ ((n : ℝ)-m)  <((B + 1): ℝ) ^ ((n : ℝ) - m)
-            ·  rw [<-rpow_mul _ (m / (n - m)) (n-m),hcompexp]
-               exact hn
-               exact_mod_cast Nat.zero_le (n * a)
-            apply Real.rpow_lt_rpow /- this creates 3 goals: 0 ≤ (↑n * ↑a) ^ (↑m / (↑n - ↑m)),
+            have h1 : ((n * a) ^ (m / ((n : ℝ) - m))) ^ ((n : ℝ) - m) <
+                  ((B + 1): ℝ) ^ ((n : ℝ) - m) := by
+               apply Real.rpow_lt_rpow /- this creates 3 goals: 0 ≤ (↑n * ↑a) ^ (↑m / (↑n - ↑m)),
                                           (↑n * ↑a) ^ (↑m / (↑n - ↑m)) < ↑B + 1 and 0 < ↑n - ↑m -/
-            ·  apply rpow_nonneg
-               exact_mod_cast Nat.zero_le (n * a)
-            ·  rw [<- ha]
-               exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
-            ·  simp only [sub_pos, cast_lt]
-               exact hn
+               ·  apply rpow_nonneg
+                  exact_mod_cast Nat.zero_le (n * a)
+               ·  rw [← ha]
+                  exact lt_floor_add_one ((↑n * ‖A‖) ^ (m / ( (n : ℝ ) - ↑m)))
+               ·  simp only [sub_pos, cast_lt]
+                  exact hn
+            have h2 : ((n : ℝ) * ↑a) ^ (m : ℝ) = ((n * a) ^ (m/((n : ℝ)-m)))^ ((n : ℝ)-m)  := by
+               rw [<-rpow_mul (by exact_mod_cast Nat.zero_le (n * a)) (m / (n - m)) (n-m),
+                  hcompexp m n hn]
+            rw [← h2] at h1
+            nth_rw 2 [← Nat.cast_sub (le_of_lt hn)] at h1
+            rw [rpow_natCast ((↑B + 1)) (n - m), rpow_natCast ] at h1
+            exact_mod_cast h1
          _  = ↑((B + 1) ^ n) := by
             rw [mul_comm,pow_mul_pow_sub]
             simp only [cast_pow, cast_add, cast_one]

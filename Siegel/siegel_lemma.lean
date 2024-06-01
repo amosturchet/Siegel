@@ -1,19 +1,19 @@
+/-
+Copyright (c) 2024 Fabrizio Barroero. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Fabrizio Barroero, Laura Capuano, Amos Turchet
+-/
 import Mathlib.Analysis.Matrix
-import Mathlib.Data.Finset.Basic
-import Mathlib.Algebra.Order.Group.PosPart
-import Mathlib.Algebra.BigOperators.Basic
-import Mathlib.Order.Interval.Finset.Defs
-import Mathlib.Data.Real.NNReal
-import Mathlib.Data.Matrix.Basic
-import Mathlib.Algebra.Order.Floor
-import Mathlib.Data.Int.Interval
+--import Mathlib.Data.Finset.Basic
+--import Mathlib.Algebra.Order.Group.PosPart
+--import Mathlib.Order.Interval.Finset.Defs
+--import Mathlib.Data.Real.NNReal
+--import Mathlib.Data.Matrix.Basic
+--import Mathlib.Algebra.Order.Floor
+--import Mathlib.Data.Int.Interval
 import Mathlib.Data.Pi.Interval
-import Mathlib.Analysis.Normed.Group.Basic
---import Mathlib
+--import Mathlib.Analysis.Normed.Group.Basic
 
---import Mathlib
-
--- set_option maxHeartbeats 10000000
 
 -- TODO docstring
 
@@ -48,71 +48,71 @@ open Matrix
 
 /- Definition of mulVec -/
 lemma mulVec_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAssocSemiring α]
-      [Fintype m] [Fintype n]  (v : n → α) (M : Matrix m n α) :
+      [Fintype n]  (v : n → α) (M : Matrix m n α) :
       M *ᵥ v = fun i => Finset.sum Finset.univ fun (j : n) => M i j * v j := by rfl
+
+/- Definition of vecMul -/
+lemma vecMul_def {m : Type u_2}  {n : Type u_3}  {α : Type v} [NonUnitalNonAssocSemiring α]
+      [Fintype m]  (v : m → α) (M : Matrix m n α) :
+      v ᵥ* M = fun j => Finset.sum Finset.univ fun (i : m) => v i * M i j  := by rfl
+
 
 
 end General_matrices
 
-variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn : m < n)
-(hm : 0 < m)
 
 
-section Integral_matrices
 
-open Matrix Finset Real Nat BigOperators
 
-/- sup commutes with casting from Nat to NNReal -/
-lemma comp_sup_eq_sup_comp_nat_NNReal {S : Type*} [Fintype S] (f : S → ℕ) (s : Finset S) :
+
+
+open  Finset
+
+/-- sup commutes with casting from Nat to NNReal -/
+lemma cast_sup_eq_sup_cast_Nat_NNReal {S : Type*} (f : S → ℕ) (s : Finset S) :
       (sup s f) = sup s fun b ↦ (f b : NNReal) :=
-  comp_sup_eq_sup_comp_of_is_total _ Nat.mono_cast (by simp only [bot_eq_zero', CharP.cast_eq_zero])
+  comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
+      (by simp only [bot_eq_zero', CharP.cast_eq_zero])
 
-lemma norm_int_mat_def : ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
-   simp_rw [norm_def,Pi.norm_def,Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj,
-      comp_sup_eq_sup_comp_nat_NNReal]
+
+namespace Int.Matrix
+
+
+
+lemma sup_sup_norm_def (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ)  :
+      ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
+   simp_rw [Matrix.norm_def, Pi.norm_def, Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj,
+      cast_sup_eq_sup_cast_Nat_NNReal]
    congr; ext; congr; ext
    simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_natCast, cast_natAbs]
 
-/- The norm of an integral matrix is the cast of a natural number -/
-lemma norm_mat_is_Nat : ∃ (a : ℕ), ‖A‖=↑a := by
+
+
+
+/-- The norm of an integral matrix is the cast of a natural number -/
+lemma norm_eq_NatCast (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) : ∃ (a : ℕ), ‖A‖=↑a := by
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
-   exact norm_int_mat_def _ _ _
+   exact sup_sup_norm_def m n A
 
-
-/- Definition of dotProd
-lemma dotProd_def : (fun j => A i j) ⬝ᵥ v = ∑ x : Fin n, A i x * v x := by rfl-/
-
-
-
-lemma one_le_norm_of_nonzero (hA_nezero : A ≠ 0) (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
+lemma one_le_norm_of_nonzero (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (hA_nezero : A ≠ 0)
+      (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
    convert_to 0 < ( a : ℝ )
-   · simp only [cast_pos]
-     exact succ_le
+   · simp only [Nat.cast_pos]
+     exact Nat.succ_le
    rw [← h_norm_int]
    exact norm_pos_iff'.mpr hA_nezero
 
+end Int.Matrix
+
+open Matrix
 
 
-end Integral_matrices
-
-
-open Nat BigOperators
-
+variable (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (v : Fin n → ℤ) (hn : m < n)
+(hm : 0 < m)
 
 --Some definitions and relative properties
 
 local notation3 "e" => m / ((n : ℝ ) - m) --exponent
-
-lemma hePos : 0 < e  := by
-   -- simp [e]
-   exact div_pos (cast_pos.mpr hm)  (sub_pos_of_lt (cast_lt.mpr hn))
-
-lemma hcompexp : (e * (n - m)) = m := by
-      apply div_mul_cancel₀
-      apply sub_ne_zero_of_ne
-      simp only [ne_eq, Nat.cast_inj]
-      linarith only [hn]
-
 
 local notation3 "B" => Nat.floor (((n : ℝ) * ‖A‖) ^ e)
 -- B' is the vector with all components = B
@@ -122,16 +122,17 @@ local notation3 "T" =>  Finset.Icc 0 B'
 
 
 local notation3  "P" => fun i : Fin m => (∑ j : Fin n, B * posPart (A i j))
-local notation3  "N" => fun i : Fin m =>  (∑ j : Fin n, B * (-negPart (A i j)))
+local notation3  "N" => fun i : Fin m =>  (∑ j : Fin n, B * (- negPart (A i j)))
    -- S is the box where the image of T goes
 local notation3  "S" => Finset.Icc N P
 
+section preparation
 
 --In order to apply Pigeohole we need:  (1) ∀ v ∈  T, (A.mulVec v) ∈  S and (2) S.card < T.card
 
 --(1)
 
-lemma Im_T_subseteq_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
+private lemma image_T_subset_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
    intro v hv
    rw [Finset.mem_Icc] at hv
    rw [Finset.mem_Icc]
@@ -142,37 +143,32 @@ lemma Im_T_subseteq_S : ∀ v ∈ T, (A.mulVec v) ∈ S := by
    all_goals rw [← mul_comm (v j)] -- moves A i j to the right of the products
    all_goals by_cases hsign : 0 ≤ A i j   --we have to distinguish cases: we have now 4 goals
    ·  rw [negPart_eq_zero.2 hsign]
-      simp only [neg_zero, mul_zero]
       exact mul_nonneg (hv.1 j) hsign
-   ·  simp only [not_le] at hsign
+   ·  rw [not_le] at hsign
       rw [negPart_eq_neg.2 (le_of_lt hsign)]
       simp only [mul_neg, neg_neg]
       exact mul_le_mul_of_nonpos_right (hv.2 j) (le_of_lt hsign)
    ·  rw [posPart_eq_self.2  hsign]
       exact mul_le_mul_of_nonneg_right (hv.2 j) hsign
-   ·  simp only [not_le] at hsign
+   ·  rw [not_le] at hsign
       rw [posPart_eq_zero.2 (le_of_lt hsign)]
-      simp only [mul_zero]
       exact mul_nonpos_of_nonneg_of_nonpos (hv.1 j) (le_of_lt hsign)
+
+
 
 --Preparation for (2)
 
-open Finset
 
-lemma card_T_eq : (Finset.Icc 0 B').card = (B+1)^n := by
+private lemma card_T_eq : (Finset.Icc 0 B').card = (B+1)^n := by
    rw [Pi.card_Icc 0 B']
    simp only [Pi.zero_apply, Int.card_Icc, sub_zero, Int.toNat_ofNat_add_one, prod_const, card_fin]
 
-open Real
+open Nat Real
 variable  (hA : A ≠ 0 ) (ha : ‖A‖ = ↑a)
 
-lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n * ‖A‖)^e := by
-   rcases norm_mat_is_Nat m n A with ⟨a, ha⟩
-   rw [ha]
-   apply one_le_rpow ?_ (le_of_lt (hePos m n hn hm))
-   exact_mod_cast one_le_mul (one_le_of_lt hn) (one_le_norm_of_nonzero m n a A hA ha)
 
-lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by   --needed for card_S_eq and also later
+
+private lemma N_le_P_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by   --needed for card_S_eq and also later
    intro j
    calc N j ≤ 0 := by
          apply Finset.sum_nonpos
@@ -185,23 +181,30 @@ lemma N_j_le_P_j_add_one : ∀ j : Fin m, N j ≤ P j + 1 := by   --needed for c
          intro i _
          exact mul_nonneg (cast_nonneg B) (posPart_nonneg (A j i))
 
-lemma card_S_eq : (Finset.Icc N P).card = (∏ i : Fin m, (P i - N i + 1)):= by
+private lemma card_S_eq : (Finset.Icc N P).card = (∏ i : Fin m, (P i - N i + 1)):= by
    rw [Pi.card_Icc N P,Nat.cast_prod]
    congr
    ext j
-   rw [Int.card_Icc_of_le (N j) (P j) (N_j_le_P_j_add_one m n A j)]
+   rw [Int.card_Icc_of_le (N j) (P j) (N_le_P_add_one m n A j)]
    ring
+
+
+private lemma hcompexp : (e * (n - m)) = m := by
+      apply div_mul_cancel₀
+      apply sub_ne_zero_of_ne
+      simp only [ne_eq, Nat.cast_inj]
+      linarith only [hn]
 
 --lemma one_le_n_mul_a : 1 ≤ n * a :=  one_le_mul (one_le_of_lt hn) h_one_le_a
    --
-open Matrix
+--open Matrix
 
 variable (h_one_le_a : 1 ≤ a)
 
 -- (2)
 
 
-lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
+private lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
       zify
       rw [card_T_eq, card_S_eq]
       calc
@@ -209,7 +212,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             rw [<-Fin.prod_const m ((n*a*B+1): ℤ)]
             apply Finset.prod_le_prod  --2 goals
             all_goals intro i _
-            linarith only [N_j_le_P_j_add_one m n A i] --first goal done
+            linarith only [N_le_P_add_one m n A i] --first goal done
 
             simp only [mul_neg, sum_neg_distrib, sub_neg_eq_add, cast_succ, cast_mul,
               add_le_add_iff_right]
@@ -246,7 +249,7 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
                ·  simp only [sub_pos, cast_lt]
                   exact hn
             have h2 : ((n : ℝ) * ↑a) ^ (m : ℝ) = ((n * a) ^ (m/((n : ℝ) - m)))^ ((n : ℝ) - m)  := by
-               rw [<-rpow_mul (by exact_mod_cast Nat.zero_le (n * a)) (m / (n - m)) (n - m),
+               rw [← rpow_mul (by exact_mod_cast Nat.zero_le (n * a)) (m / (n - m)) (n - m),
                   hcompexp m n hn]
             rw [← h2] at h1
             nth_rw 2 [← Nat.cast_sub (le_of_lt hn)] at h1
@@ -257,17 +260,29 @@ lemma card_S_le_card_T : (Finset.Icc N P).card<(Finset.Icc 0 B').card := by
             simp only [cast_pow, cast_add, cast_one]
             exact (le_of_lt hn)
 
+--end (2)
 
 
-theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
+
+private lemma one_le_n_mul_norm_A_pow_e : 1 ≤ (n * ‖A‖)^e := by
+   rcases Int.Matrix.norm_eq_NatCast m n A with ⟨a, ha⟩
+   rw [ha]
+   have he : 0 < e := by exact div_pos (cast_pos.mpr hm)  (sub_pos_of_lt (cast_lt.mpr hn))
+   apply one_le_rpow ?_ (le_of_lt he)
+   exact_mod_cast one_le_mul (one_le_of_lt hn) (Int.Matrix.one_le_norm_of_nonzero m n a A hA ha)
+
+end preparation
+
+
+theorem siegels_lemma  (hA_nezero : A ≠ 0)  : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
       A.mulVec t = 0 ∧ ‖t‖ ≤ ((n * ‖A‖)^((m : ℝ ) / (n - m))) := by
 
-   rcases norm_mat_is_Nat m n A with ⟨a, ha⟩
+   rcases Int.Matrix.norm_eq_NatCast m n A with ⟨a, ha⟩
 
    --Pigeonhole
    rcases Finset.exists_ne_map_eq_of_card_lt_of_maps_to
-         (card_S_le_card_T m n a A hn ha (one_le_norm_of_nonzero m n a A hA ha))
-         (Im_T_subseteq_S m n A) with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
+         (card_S_le_card_T m n a A hn ha (Int.Matrix.one_le_norm_of_nonzero m n a A hA_nezero ha))
+         (image_T_subset_S m n A) with ⟨ x, hxT,y, hyT ,hneq, hfeq⟩
    use x-y
    -- proof that x - y ≠ 0
    refine ⟨sub_ne_zero.mpr hneq, ?_, ?_⟩
@@ -276,8 +291,8 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
    rw [sub_eq_add_neg,A.mulVec_add, A.mulVec_neg]
    exact hfeq
    ---Inequality
-   rw [← Matrix.norm_col,norm_le_iff
-         (le_trans zero_le_one (one_le_n_mul_norm_A_pow_e m n A hn hm hA))]
+   rw [← norm_col, norm_le_iff
+         (le_trans zero_le_one (one_le_n_mul_norm_A_pow_e m n A hn hm hA_nezero))]
    intro i j
    rw [Finset.mem_Icc] at hyT
    rw [Finset.mem_Icc] at hxT
@@ -300,7 +315,7 @@ theorem siegels_lemma   : ∃ (t : Fin n → ℤ), t ≠ 0 ∧
                      exact hyT.1 i
             _  ≤  (↑n * ‖A‖) ^ e := by
                   apply le_trans' (Nat.floor_le (le_trans zero_le_one
-                        (one_le_n_mul_norm_A_pow_e m n A hn hm hA)))
+                        (one_le_n_mul_norm_A_pow_e m n A hn hm hA_nezero)))
                   simp only [Int.cast_natCast, le_refl]
 --#find_home! norm_mat_int
 --#lint

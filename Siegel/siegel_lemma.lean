@@ -22,12 +22,13 @@ import Mathlib.Data.Pi.Interval
 
 In this file we introduce and prove Siegel's Lemma in its most basic version. This is a fundamental
 tool in diophantine approximation and transcendency and says that there exists a "small" integral
-non-zero solution of a non-trivial overdetermined system of linear equations with integer
+non-zero solution of a non-trivial underdetermined system of linear equations with integer
 coefficients.
 
 ## Main results
 
-- `siegels_lemma`:
+- `siegels_lemma`: Given a non-singular `m × n` matrix `A` with `m < n` the linear system it
+determines has a non-zero integer solution `t` with `‖t‖ ≤ ((n * ‖A‖) ^ ((m : ℝ) / (n - m)))`
 
 ## Notation
 
@@ -68,31 +69,59 @@ end General_matrices
 
 open  Finset
 
+--superato
 /-- sup commutes with casting from Nat to NNReal -/
 lemma cast_sup_eq_sup_cast_Nat_NNReal {S : Type*} (f : S → ℕ) (s : Finset S) :
       (sup s f) = sup s fun b ↦ (f b : NNReal) :=
   comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
       (by simp only [bot_eq_zero', CharP.cast_eq_zero])
 
-
 namespace Int.Matrix
-
-
-
-lemma sup_sup_norm_def (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ)  :
+--superato
+lemma sup_sup_norm_def'' (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ)  :
       ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
    simp_rw [Matrix.norm_def, Pi.norm_def, Pi.nnnorm_def, ←NNReal.coe_natCast, NNReal.coe_inj,
       cast_sup_eq_sup_cast_Nat_NNReal]
    congr; ext; congr; ext
    simp only [coe_nnnorm, Int.norm_eq_abs, Int.cast_abs, NNReal.coe_natCast, cast_natAbs]
 
+lemma sup_sup_norm_def [Fintype m] [Fintype n][SeminormedAddCommGroup α] (A : Matrix m n α) :
+    ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ ‖A b b'‖₊) := by
+  simp_rw [Matrix.norm_def, Pi.norm_def, Pi.nnnorm_def]
 
 
+lemma sup_sup_norm_def' [Fintype m] [Fintype n] (A : Matrix m n ℤ) :
+     ‖A‖ = (sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs) := by
+   simp_rw [Matrix.norm_def, Pi.norm_def, Pi.nnnorm_def, ← NNReal.coe_natCast, NNReal.coe_inj]
+   rw [comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
+     (by simp only [bot_eq_zero', CharP.cast_eq_zero])]
+   congr
+   rw [Function.comp_def]
+   ext; congr
+   rw [comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
+     (by simp only [bot_eq_zero', CharP.cast_eq_zero])]
+   congr; ext; congr;
+   rw [Function.comp_apply, NNReal.natCast_natAbs]
 
 /-- The norm of an integral matrix is the cast of a natural number -/
 lemma norm_eq_NatCast (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) : ∃ (a : ℕ), ‖A‖=↑a := by
+  use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
+  rw [sup_sup_norm_def,← NNReal.coe_natCast, NNReal.coe_inj]
+  rw [comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
+     (by simp only [bot_eq_zero', CharP.cast_eq_zero])]
+  congr
+  rw [Function.comp_def]
+  ext; congr
+  rw [comp_sup_eq_sup_comp_of_is_total Nat.cast Nat.mono_cast
+     (by simp only [bot_eq_zero', CharP.cast_eq_zero])]
+  congr; ext; congr;
+   rw [Function.comp_apply, NNReal.natCast_natAbs]
+
+
+/-- The norm of an integral matrix is the cast of a natural number -/
+lemma norm_eq_NatCast' (m n : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) : ∃ (a : ℕ), ‖A‖=↑a := by
    use sup univ fun b ↦ sup univ fun b' ↦ (A b b').natAbs
-   exact sup_sup_norm_def m n A
+   exact sup_sup_norm_def' A
 
 lemma one_le_norm_of_nonzero (m n a : ℕ) (A : Matrix (Fin m) (Fin n) ℤ) (hA_nezero : A ≠ 0)
       (h_norm_int : ‖A‖ = ↑a) : 1 ≤ a := by
